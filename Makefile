@@ -16,23 +16,23 @@ LIB_PATH=-LD:/dev/dev_lib/lib/x64
 # D:/cygwin64/usr/x86_64-w64-mingw32/sys-root/mingw (/include/GL and /lib respectively)
 # -> this means that this is only set up to compile for x64/cygwin64
 
-
 # the flags to pass to the compiler/linker | NOTE: using standard names to leverage implicit rules
 CFLAGS=-w -Wall -g -ggdb3 $(INCL_PATH)
 CXXFLAGS=-std=c++14 -w -Wall -g -ggdb3 $(INCL_PATH)
 LDFLAGS=$(LIB_PATH) -Wl,-subsystem,windows -lSDL2main -lSDL2 -lglu32 -lopengl32
 
-BUILD_DIR=../build
-
 TARGET=main.exe
-C_FILES=$(wildcard *.c)
-CPP_FILES=$(wildcard *.cpp)
-OBJS=$(C_FILES:.c=.o) $(CPP_FILES:.cpp=.o)
+BUILD_DIR=build
+OBJS=$(BUILD_DIR)/Wasteland.o $(BUILD_DIR)/GameObjects.o $(BUILD_DIR)/SceneManager.o
+ADD_OBJS=GL/gl3w.o
 
 all: $(TARGET)
 
-$(TARGET): $(OBJS)
+$(TARGET): $(OBJS) $(ADD_OBJS)
 	$(CXX) -o $@ $^ $(STATIC_LIBS) $(LDFLAGS)
+
+$(BUILD_DIR)/%.o: %.cpp
+	$(CXX) -c $(CXXFLAGS) $< -o $@
 
 .PHONY: clean
 clean:

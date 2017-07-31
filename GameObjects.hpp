@@ -4,146 +4,97 @@
 #include <vector>
 #include <utility>
 
+#include <GL/gl3w.h>
 #include <GL/gl.h>
+#include <GL/glext.h>
 
-struct coord2d_s
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+typedef struct point2_s point2_t;
+
+// NOTE: no Z / depth, use vert. shader to compute depth
+struct point2_s
 {
-   float x;
+   // point2_s(GLfloat x, GLfloat y) :
+   //    m_x(x),
+   //    m_y(y)
+   // { }
 
-   float y;
+   GLfloat m_x, m_y;
 };
 
-typedef coord2d_s point2_t;
+// typedef struct point3_s point3_t;
+// typedef struct point3_s vector3_t;
 
-typedef coord2d_s vector2_t;
+// struct point3_s
+// {
+//    point2_s(GLfloat x, GLfloat y, GLfloat z) :
+//       m_x(x),
+//       m_y(y),
+//       m_z(z)
+//    { }
 
-struct ray2_s
-{
-   point2_t base;
+//    GLfloat m_x, m_y, m_z;
+// };
 
-   vector2_t dir;
+/* NOTE: these (^) are here BC any arrays created for 
+ * use in vao/vbo need to persist / get new'd */
+static const GLfloat g1_color_data[] = {
+   1.0f, 0.0f, 0.0f, // red
+   0.0f, 1.0f, 0.0f, // green
+   0.0f, 0.0f, 1.0f, // blue
+   // 1.0f, 1.0f, 1.0f, // white
 };
-
-typedef ray2_s ray2_t;
-
-// nah don't do this
-enum Actors_e
-{
-   PLAYER = 0,
-   NON_PLAYER = 1,
-   PROJECTILE = 2
-};
-
-typedef Actors_e actor_t;
-
-static struct
-{
-   GLuint vertex_buffer, element_buffer;
-   GLuint textures[2];
-
-   // fields for shader objects
-} g_resources;
-
-// typedef std::deque<PhysObj> objlist_t;
-
-// typedef std::vector<Actor> actorlist_t;
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // - PhysObj & children
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class PhysObj
+class PhysObj 
 {
 public:
-   PhysObj();
+   PhysObj(GLuint shader_program_id, GLuint mvp_id, glm::mat4 model);
 
    ~PhysObj();
 
-   virtual void draw() = 0;
-private:
-
+   virtual void render(glm::mat4& projection, glm::mat4& view) = 0;
+protected:
+   GLuint m_vbo[2]; // coord & color buffers
+   GLuint m_shader_program_id;
+   GLuint m_mvp_id;
+   glm::mat4 m_model;
 };
 
-class LineSegment : public PhysObj
+class Triangle : public PhysObj
 {
 public:
-   LineSegment();
+   Triangle(GLuint shader_program_id, GLuint mvp_id, glm::mat4 model,
+            point2_t a, point2_t b, point2_t c);
 
-   ~LineSegment();
+   ~Triangle();
 
-   void draw();
+   void render(glm::mat4& projection, glm::mat4& view);
 
-private:
-   point2_t a;
-   
-   point2_t b;
+protected:
+   GLfloat m_coord_data[6];
 };
 
 class Rectangle : public PhysObj
 {
 public:
-   Rectangle();
+   Rectangle(GLuint shader_program_id, GLuint mvp_id, glm::mat4 model,
+             point2_t a, point2_t b, point2_t c, point2_t d);
 
    ~Rectangle();
 
-   void draw();
+   void render();
 
-private:
-   int w;
-
-   int h; 
-
-   point2_t top_left;
+protected:
+   GLfloat m_coord_data[12];
 };
 
-class Circle : public PhysObj
-{
-public:
-   Circle();
-
-   ~Circle();
-
-   void draw();
-
-private:
-   int r;
-
-   point2_t center;
-};
-
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// - Actor & children
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class Actor
-{
-public:
-   Actor();
-
-   ~Actor();   
-
-   virtual void update();
-
-private:
-   // base is the actor's focus point, dir is the horiz & vert velocities
-   ray2_t mov_ray;
-
-   // used in the broad phase of collision det
-   // Rectangle bound_box;
-
-   // push PhysObjs on, relative to focus point
-   std::vector<PhysObj> hitboxes;
-
-   // "textureData" : texture (pointer?), size, render fn()
-};
-
-// class Player : public Actor
-// {
-// public:
-//    Player();
-
-//    ~Player();
-
-// private:
-
-// };
+/* ANOTHER COOL IDEA
+ * for projectile class PhysObj, calculate full trajectory when fired,
+ * but use a timed draw to show movement - allows for frame speed control + + */
 
 #endif
