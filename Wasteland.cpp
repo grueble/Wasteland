@@ -27,7 +27,7 @@ bool init();
 void run();
 void close();
 
-#undef main
+#undef main 
 int main(int argc, char* argv[])
 {
 	if (init()) {
@@ -156,10 +156,10 @@ void run()
       // this should handle phys (i.e. movement, collision det. and res., etc.) for every obj
 
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-      scene.drawScene();
+      scene.drawScene(); // may want to pass view matrix as arg to this
       SDL_GL_SwapWindow(window); // swap buffers; finalized render frame
    }
-   glDeleteVertexArrays(1, &vao);
+   glDeleteVertexArrays(1, &vao); // this gets called b4 glDeleteBuffers... problem?
 }
 
 // does a segfault invalidate my close() ? might need to call this earlier / more / better

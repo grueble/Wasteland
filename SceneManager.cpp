@@ -22,30 +22,41 @@ void Scene::loadScene()
 
    GLuint tri_mvp_id = glGetUniformLocation(tri_shader_prog_id, "MVP");
 
+   /* NOTE: model @ origin
+    * NOTE: **screen** coords are always of the form: 
+    * -> ( [-1.0f, 1.0f], [-1.0f, 1.0f] ) */
+   scene_objs.push_back(new Triangle(
+         tri_shader_prog_id, tri_mvp_id, // ID's associated w/ shader program
+         glm::mat4(1.0f),                // obj. @ origin in world space
+         // (point2_t){-1.0f, -1.0f}, (point2_t){1.0f, -1.0f}, (point2_t){0.0f, 1.0f}));
+         (tri_data_t){ (point2_t){-1.0f, -1.0f}, 
+                       (point2_t){ 1.0f, -1.0f}, 
+                       (point2_t){ 0.0f,  1.0f} }));
+
+   GLuint quad_shader_prog_id = loadShaders("shaders/quad.vert", 
+                                            "shaders/quad.frag");
+
+   GLuint quad_mvp_id = glGetUniformLocation(quad_shader_prog_id, "MVP");
+
+   glm::mat4 translation = glm::translate(glm::vec3(2, 0, 0));
+
+   scene_objs.push_back(new Quad(
+      quad_shader_prog_id, quad_mvp_id,   // ID's associated w/ shader program
+      glm::translate(glm::vec3(2, 0, 0)), // obj. @ (2, 0, 0) in world space
+      (quad_data_t){ (point2_t){-0.5f,  0.5f},     // top-left
+                     (point2_t){ 0.5f,  0.5f},     // top-right
+                     (point2_t){-0.5f, -0.5f},     // bottom-left
+                     (point2_t){ 0.5f, -0.5f} })); // bottom-right
+
+
    m_projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f);
-   // glm::mat4 projection = glm::ortho(-10.0f,10.0f,-10.0f,10.0f,0.0f,100.0f); // ortho
+   // m_projection = glm::ortho(-10.0f,10.0f,-10.0f,10.0f,0.0f,100.0f);
 
    // this is camera frame code, will need to be input controlled
    glm::vec3 eye_position = glm::vec3(4.0f, 3.0f, 3.0f);
    glm::vec3 look_at_point = glm::vec3(0.0f, 0.0f, 0.0f);
    glm::vec3 up_dir = glm::vec3(0.0f, 1.0f, 0.0f);
    m_view = glm::lookAt(eye_position, look_at_point, up_dir);
-
-   /* NOTE: model @ origin
-    * NOTE: **screen** coords are always of the form: 
-    * -> ( [-1.0f, 1.0f], [-1.0f, 1.0f] ) */
-   scene_objs.push_back(new Triangle(
-         tri_shader_prog_id, tri_mvp_id, glm::mat4(1.0f),
-         (point2_t){-1.0f, -1.0f}, (point2_t){1.0f, -1.0f}, (point2_t){0.0f, 1.0f}));
-
-   // GLuint quad_shader_prog_id = loadShaders("shaders/quad.vert", 
-   //                                          "shaders/quad.frag");
-
-   // GLuint mvp_id
-
-
-
-
 }
 
 void Scene::drawScene()
@@ -134,6 +145,12 @@ GLuint loadShaders(const char* vertex_fpath, const char* fragment_fpath)
    free(fragment_src); 
 
    return shader_program;
+}
+
+void loadTexture(const char* texture_fpath)
+{
+   GLuint texture;
+   glGenTextures(1, &texture);
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

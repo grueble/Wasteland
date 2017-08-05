@@ -12,6 +12,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 typedef struct point2_s point2_t;
+typedef struct tri_data_s tri_data_t;
+typedef struct quad_data_s quad_data_t;
 
 // NOTE: no Z / depth, use vert. shader to compute depth
 struct point2_s
@@ -38,6 +40,22 @@ struct point2_s
 //    GLfloat m_x, m_y, m_z;
 // };
 
+struct tri_data_s
+{
+   // tri_data_s(point2_t a, point2_t b, point2_t c) :
+   //    m_a(a),
+   //    m_b(b),
+   //    m_c(c)
+   // { }  
+
+   point2_t m_a, m_b, m_c;
+};
+
+struct quad_data_s
+{
+   point2_t m_a, m_b, m_c, m_d;
+};
+
 /* NOTE: these (^) are here BC any arrays created for 
  * use in vao/vbo need to persist / get new'd */
 static const GLfloat g1_color_data[] = {
@@ -58,43 +76,63 @@ public:
    ~PhysObj();
 
    virtual void render(glm::mat4& projection, glm::mat4& view) = 0;
+
 protected:
    GLuint m_vbo[2]; // coord & color buffers
    GLuint m_shader_program_id;
    GLuint m_mvp_id;
+   GLuint m_texture_id;
    glm::mat4 m_model;
 };
 
 class Triangle : public PhysObj
 {
 public:
-   Triangle(GLuint shader_program_id, GLuint mvp_id, glm::mat4 model,
-            point2_t a, point2_t b, point2_t c);
+   Triangle(GLuint shader_program_id, 
+            GLuint mvp_id, 
+            glm::mat4 model,
+            tri_data_t data);
+            // point2_t a, point2_t b, point2_t c);
 
    ~Triangle();
 
    void render(glm::mat4& projection, glm::mat4& view);
 
 protected:
-   GLfloat m_coord_data[6];
+   // GLfloat m_coord_data[6];
+   tri_data_t m_coord_data;
 };
 
-class Rectangle : public PhysObj
+class Quad : public PhysObj
 {
 public:
-   Rectangle(GLuint shader_program_id, GLuint mvp_id, glm::mat4 model,
-             point2_t a, point2_t b, point2_t c, point2_t d);
+   Quad(GLuint shader_program_id, 
+        GLuint mvp_id, 
+        glm::mat4 model,
+        quad_data_t data);
+        // point2_t a, point2_t b, point2_t c, point2_t d);
 
-   ~Rectangle();
+   ~Quad();
 
-   void render();
+   void render(glm::mat4& projection, glm::mat4& view);
 
 protected:
-   GLfloat m_coord_data[12];
+   // GLfloat m_coord_data[12];
+   quad_data_t m_coord_data;
 };
 
 /* ANOTHER COOL IDEA
  * for projectile class PhysObj, calculate full trajectory when fired,
  * but use a timed draw to show movement - allows for frame speed control + + */
+
+/* OK, so I will eventually have to decide between storing position data
+ * as a GLfloat[] or struct (i.e. tri_data_t = 3x point3_t). This will be 
+ * decided by efficiency and whether memory allocation or loop speed is my
+ * limiting variable */
+
+/* TRACKS
+ * create as a trigonometric function, start vehicle at origin and render 
+ * track (using a texture) and calculating all values of y using screen x values
+ */
 
 #endif

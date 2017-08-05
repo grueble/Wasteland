@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "GameObjects.hpp"
+#include <glm/gtx/transform.hpp>
 
 // ***NOTE: this should eventually be refactored into a SceneManager
 // create scene class to store everything - vbo (coords, colors, +), mvps, etc.
@@ -19,6 +20,7 @@
 
 void getScene(std::vector<PhysObj*>& scene_objs); // oh we gettin data structures
 GLuint loadShaders(const char* vertex_fpath, const char* fragment_fpath);
+void loadTexture(const char* texture_fpath);
 char* filetobuf(const char *file);
 
 class Scene
