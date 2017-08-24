@@ -19,11 +19,11 @@ LIB_PATH=-LD:/dev/dev_lib/lib/x64
 # the flags to pass to the compiler/linker | NOTE: using standard names to leverage implicit rules
 CFLAGS=-w -Wall -g -ggdb3 $(INCL_PATH)
 CXXFLAGS=-std=c++14 -w -Wall -g -ggdb3 $(INCL_PATH)
-LDFLAGS=$(LIB_PATH) -Wl,-subsystem,windows -lSDL2main -lSDL2 -lglu32 -lopengl32
+LDFLAGS=$(LIB_PATH) -Wl,-subsystem,windows -lSDL2main -lSDL2 -lSDL2_image -lglu32 -lopengl32
 
 TARGET=main.exe
 BUILD_DIR=build
-OBJS=$(BUILD_DIR)/Wasteland.o $(BUILD_DIR)/GameObjects.o $(BUILD_DIR)/SceneManager.o
+OBJS=$(BUILD_DIR)/RenderObjects.o $(BUILD_DIR)/GamePhysics.o $(BUILD_DIR)/SceneGraph.o $(BUILD_DIR)/SceneManager.o $(BUILD_DIR)/Wasteland.o
 ADD_OBJS=GL/gl3w.o
 
 all: $(TARGET)
