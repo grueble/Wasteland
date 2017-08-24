@@ -1,177 +1,155 @@
 #include "SceneManager.hpp"
 
-Scene::Scene()
-{
+// void loadScene(SceneNode& root)
+// {
+//    GLuint tri_shader_prog_id = loadShaders("shaders/triangle.vert", 
+//                                            "shaders/triangle.frag");
 
+//    GLuint tri_mvp_id = glGetUniformLocation(tri_shader_prog_id, "MVP");
+
+//    /* NOTE: model @ origin
+//     * NOTE: **screen** coords are always of the form: 
+//     * -> ( [-1.0f, 1.0f], [-1.0f, 1.0f] ) */
+//    root.push_back(new Triangle(
+//          tri_shader_prog_id, tri_mvp_id, // ID's associated w/ shader program
+//          glm::mat4(1.0f),                // obj. @ origin in world space
+//          // (point2_t){-1.0f, -1.0f}, (point2_t){1.0f, -1.0f}, (point2_t){0.0f, 1.0f}));
+//          (tri_data_t){ (point2_t){-1.0f, -1.0f}, 
+//                        (point2_t){ 1.0f, -1.0f}, 
+//                        (point2_t){ 0.0f,  1.0f} }));
+
+//    GLuint quad_shader_prog_id = loadShaders("shaders/quad.vert", 
+//                                             "shaders/quad.frag");
+
+//    GLuint quad_mvp_id = glGetUniformLocation(quad_shader_prog_id, "MVP");
+
+//    glm::mat4 translation = glm::translate(glm::vec3(2, 0, 0));
+
+//    root.push_back(new Quad(
+//       quad_shader_prog_id, quad_mvp_id,   // ID's associated w/ shader program
+//       glm::translate(glm::vec3(2, 0, 0)), // obj. @ (2, 0, 0) in world space
+//       (quad_data_t){ (point2_t){-0.5f,  0.5f},     // top-left
+//                      (point2_t){ 0.5f,  0.5f},     // top-right
+//                      (point2_t){-0.5f, -0.5f},     // bottom-left
+//                      (point2_t){ 0.5f, -0.5f} })); // bottom-right
+
+//    m_projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f);
+//    // m_projection = glm::ortho(-10.0f,10.0f,-10.0f,10.0f,0.0f,100.0f);
+
+//    // this is camera frame code, will need to be input controlled
+//    glm::vec3 eye_position = glm::vec3(4.0f, 3.0f, 3.0f);
+//    glm::vec3 look_at_point = glm::vec3(0.0f, 0.0f, 0.0f);
+//    glm::vec3 up_dir = glm::vec3(0.0f, 1.0f, 0.0f);
+//    m_view = glm::lookAt(eye_position, look_at_point, up_dir);
+// }
+
+SceneNode* loadScene()
+{
+   GLuint shader_program_id = loadShaders("shaders/bg.vert", "shaders/bg.frag");
+   GLuint mvp_id = glGetUniformLocation(shader_program_id, "MVP");
+   GLuint texture_id = glGetUniformLocation(shader_program_id, "ourTexture");
+
+   std::vector<float> vertices = {
+      // position    // color           // uv coords
+      0.0f, 0.0f,    0.0f, 0.0f, 0.0f,  0.0f, 0.0f,  // bottom-left
+      0.0f, 10.0f,   0.0f, 0.0f, 0.0f,  0.0f, 1.0f,  // top-left
+      20.0f, 10.0f,  0.0f, 0.0f, 0.0f,  1.0f, 1.0f,  // top-right
+      20.0f, 0.0f,   0.0f, 0.0f, 0.0f,  1.0f, 0.0f   // bottom-right
+   };
+
+   RenderQuad* mesh = new RenderQuad(shader_program_id, mvp_id, texture_id, vertices);
+
+   AABB_t* hitbox = new AABB_t((vec2_t){ 10.0f, 5.0f },  // p
+                               (vec2_t){ 10.0f, 0.0f },  // xw
+                               (vec2_t){ 0.0f,  5.0f }); // yw
+
+   // problem here bc passing hitbox as PhysObj when using this constructor 
+   SceneNode* root = new SceneNode((RenderObj*)mesh, (PhysObj*)hitbox, glm::mat4(1.0f), glm::mat4(1.0f));
+
+   // SceneNode* platform0_bb = new SceneNode(
+   //    NULL, 
+   //    new AABB((vec2_t){ 9.5f, 3.0f },  // p
+   //             (vec2_t){ 5.5f, 0.0f },  // xw
+   //             (vec2_t){ 0.0f, 2.5f }), // yw
+   //    glm::mat4(1.0f),
+   //    glm::mat4(1.0f)
+   // );
+
+   // shader_program_id = loadShaders("shaders/platform.vert", "shaders/platform.frag");
+
+   // GeomNode* platform0_0 = new GeomNode(
+   //    new RenderQuad(shader_program_id,
+   //                   glGetUniformLocation(shader_program_id, "MVP"), 
+   //                   glGetUniformLocation(shader_program_id, "ourTexture")),
+   //    new AABB((vec2_t){ 5.5f, 4.5f },  // p
+   //             (vec2_t){ 1.5f, 0.0f },  // xw
+   //             (vec2_t){ 0.0f, 1.0f }), // yw
+   //    glm::mat4(1.0f),
+   //    glm::mat4(1.0f)
+   // );
+
+   // GeomNode* platform0_1 = new GeomNode(
+   //    new RenderTri(shader_program_id,
+   //                  glGetUniformLocation(shader_program_id, "MVP"), 
+   //                  glGetUniformLocation(shader_program_id, "ourTexture")),
+   //    new RenderTri((vec2_t){ 9.0f, 3.5f }, // p
+   //                  (vec2_t){ 2.0f, 0.0f }, // xw
+   //                  (vec2_t){ 0.0f, 2.0f }, // yw
+   //                  normalize((vec2_t){ 1.0f, 1.0f })), // 3rd axis @ pi/4 rads
+   //    glm::mat4(1.0f),
+   //    glm::mat4(1.0f)
+   // );
+
+   // GeomNode* platform0_2 = new GeomNode(
+   //    new RenderQuad(shader_program_id,
+   //                   glGetUniformLocation(shader_program_id, "MVP"), 
+   //                   glGetUniformLocation(shader_program_id, "ourTexture")),
+   //    new AABB((vec2_t){ 12.0f, 1.0f },  // p
+   //             (vec2_t){  3.0f, 0.0f },  // xw
+   //             (vec2_t){  0.0f, 0.5f }), // yw
+   //    glm::mat4(1.0f),
+   //    glm::mat4(1.0f)
+   // );
+
+   // platform0_bb->addChild(platform0_0);
+   // platform0_bb->addChild(platform0_1);
+   // platform0_bb->addChild(platform0_2);
+   // root->addChild(platform0_bb);
+
+   return root;
 }
 
-Scene::~Scene()
-{
-   std::vector<PhysObj*>::iterator it;
-   for (it = scene_objs.begin(); it != scene_objs.end(); ++it)
-   {
-      // destroy any scene objects, calls glDeleteProgram
-      delete(*it);
-   }
-}
+// ActorNode* loadPlayer()
+// {
+   // ActorNode* player = new ActorNode(
+   //    NULL,
+   //    new Circle((vec2){ 7.0f, 4.0f }, 1.0f),
+   //    glm::mat4(1.0f),
+   //    glm::mat4(1.0f)
+   // );
 
-void Scene::loadScene()
-{
-   GLuint tri_shader_prog_id = loadShaders("shaders/triangle.vert", 
-                                           "shaders/triangle.frag");
+   // GLuint shader_program_id = loadShaders("shaders/wheel.vert", "shaders/wheel.frag");
 
-   GLuint tri_mvp_id = glGetUniformLocation(tri_shader_prog_id, "MVP");
+   // SceneNode* front_wheel = new SceneNode(
+   //    new RenderQuad(shader_program_id,
+   //                   glGetUniformLocation(shader_program_id, "MVP"), 
+   //                   glGetUniformLocation(shader_program_id, "ourTexture")),
+   //    new Circle((vec2){ 7.5f, 4.0f }, 0.5f),
+   //    glm::mat4(1.0f),
+   //    glm::mat4(1.0f)
+   // );
 
-   /* NOTE: model @ origin
-    * NOTE: **screen** coords are always of the form: 
-    * -> ( [-1.0f, 1.0f], [-1.0f, 1.0f] ) */
-   scene_objs.push_back(new Triangle(
-         tri_shader_prog_id, tri_mvp_id, // ID's associated w/ shader program
-         glm::mat4(1.0f),                // obj. @ origin in world space
-         // (point2_t){-1.0f, -1.0f}, (point2_t){1.0f, -1.0f}, (point2_t){0.0f, 1.0f}));
-         (tri_data_t){ (point2_t){-1.0f, -1.0f}, 
-                       (point2_t){ 1.0f, -1.0f}, 
-                       (point2_t){ 0.0f,  1.0f} }));
+   // SceneNode* back_wheel = new SceneNode(
+   //    new RenderQuad(shader_program_id,
+   //                   glGetUniformLocation(shader_program_id, "MVP"), 
+   //                   glGetUniformLocation(shader_program_id, "ourTexture")),
+   //    new Circle((vec2_t{ 6.5f, 4.0f }, 0.5f)),
+   //    glm::mat4(1.0f),
+   //    glm::mat4(1.0f)
+   // );
 
-   GLuint quad_shader_prog_id = loadShaders("shaders/quad.vert", 
-                                            "shaders/quad.frag");
+   // player->addChild(front_wheel);
+   // player->addChild(back_wheel);
 
-   GLuint quad_mvp_id = glGetUniformLocation(quad_shader_prog_id, "MVP");
-
-   glm::mat4 translation = glm::translate(glm::vec3(2, 0, 0));
-
-   scene_objs.push_back(new Quad(
-      quad_shader_prog_id, quad_mvp_id,   // ID's associated w/ shader program
-      glm::translate(glm::vec3(2, 0, 0)), // obj. @ (2, 0, 0) in world space
-      (quad_data_t){ (point2_t){-0.5f,  0.5f},     // top-left
-                     (point2_t){ 0.5f,  0.5f},     // top-right
-                     (point2_t){-0.5f, -0.5f},     // bottom-left
-                     (point2_t){ 0.5f, -0.5f} })); // bottom-right
-
-
-   m_projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f);
-   // m_projection = glm::ortho(-10.0f,10.0f,-10.0f,10.0f,0.0f,100.0f);
-
-   // this is camera frame code, will need to be input controlled
-   glm::vec3 eye_position = glm::vec3(4.0f, 3.0f, 3.0f);
-   glm::vec3 look_at_point = glm::vec3(0.0f, 0.0f, 0.0f);
-   glm::vec3 up_dir = glm::vec3(0.0f, 1.0f, 0.0f);
-   m_view = glm::lookAt(eye_position, look_at_point, up_dir);
-}
-
-void Scene::drawScene()
-{
-   std::vector<PhysObj*>::iterator it;
-   for (it = scene_objs.begin(); it != scene_objs.end(); ++it)
-   {
-      (*it)->render(m_projection, m_view);
-   }
-}
-
-GLuint loadShaders(const char* vertex_fpath, const char* fragment_fpath)
-{
-   // create empty handles for our shaders
-   GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-   GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-
-   // read our shaders into the appropriate buffers
-   GLchar* vertex_src = filetobuf(vertex_fpath);
-   GLchar* fragment_src = filetobuf(fragment_fpath);
-
-   GLint result = GL_FALSE;
-   int log_length;
-
-   // send the vertex shader src code to GL; compile; check for (and handle?) errors
-   glShaderSource(vertex_shader, 1, (const GLchar**)&vertex_src, 0);
-   glCompileShader(vertex_shader);
-   glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &result);
-   if (result == GL_FALSE) 
-   {
-      glGetShaderiv(vertex_shader, GL_INFO_LOG_LENGTH, &log_length);
-      if (log_length > 0)
-      {
-         GLchar vertex_shader_info_log[log_length + 1];
-         glGetShaderInfoLog(vertex_shader, log_length, NULL, &vertex_shader_info_log[0]);
-         printf("Vertex shader compilation failure!\n%s\n", vertex_shader_info_log);
-      }
-   }
-
-   // send the fragment shader src code to GL; compile; check for (and handle?) errors
-   glShaderSource(fragment_shader, 1, (const GLchar**)&fragment_src, 0);
-   glCompileShader(fragment_shader);
-   glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &result);
-   if (result == GL_FALSE) 
-   {
-      glGetShaderiv(fragment_shader, GL_INFO_LOG_LENGTH, &log_length);
-      if (log_length > 0)
-      {
-         GLchar fragment_shader_info_log[log_length + 1];
-         glGetShaderInfoLog(fragment_shader, log_length, NULL, &fragment_shader_info_log[0]);
-         printf("Fragment shader compilation failure!\n%s\n", fragment_shader_info_log);
-      }
-   }
-
-   // create an empty handle for our linked shader program
-   GLuint shader_program = glCreateProgram();
-
-   // attach our shaders to our program
-   glAttachShader(shader_program, vertex_shader);
-   glAttachShader(shader_program, fragment_shader);
-
-   /* bind attr. @ index 0 (coordinates) to in_Position and attr. @ index 1 (color) to in_Color
-    * -> NOTE: attr. locations must be setup before calling glLinkProgram */
-   // glBindAttribLocation(shader_program, 0, "in_Position"); // layout(location = 0)  in .vert
-   // glBindAttribLocation(shader_program, 1, "in_Color"); // layout(location = 1)  in .vert
-   glLinkProgram(shader_program); // link our program
-
-   // check for proper linkage between the vertex and fragment shaders (and other errors)
-   glGetProgramiv(shader_program, GL_LINK_STATUS, &result);
-   if (result == GL_FALSE)
-   {
-      glGetShaderiv(shader_program, GL_INFO_LOG_LENGTH, &log_length);
-      if (log_length > 0)
-      {
-         GLchar shader_program_info_log[log_length + 1];
-         glGetShaderInfoLog(shader_program, log_length, NULL, &shader_program_info_log[0]);
-         printf("Shader program linking failure!\n%s\n", shader_program_info_log);
-      }
-   }
-
-   glDetachShader(shader_program, vertex_shader);
-   glDetachShader(shader_program, fragment_shader);
-   glDeleteShader(vertex_shader);
-   glDeleteShader(fragment_shader);
-   free(vertex_src);
-   free(fragment_src); 
-
-   return shader_program;
-}
-
-void loadTexture(const char* texture_fpath)
-{
-   GLuint texture;
-   glGenTextures(1, &texture);
-}
-
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// - Utility Functions
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-char* filetobuf(const char *file)
-{
-    FILE *fptr;
-    long length;
-    char *buf;
-
-    fptr = fopen(file, "rb"); /* Open file for reading */
-    if (!fptr) /* Return NULL on failure */
-        return NULL;
-    fseek(fptr, 0, SEEK_END); /* Seek to the end of the file */
-    length = ftell(fptr); /* Find out how many bytes into the file we are */
-    buf = (char*)malloc(length+1); /* Allocate a buffer for the entire length of the file and a null terminator */
-    fseek(fptr, 0, SEEK_SET); /* Go back to the beginning of the file */
-    fread(buf, length, 1, fptr); /* Read the contents of the file in to the buffer */
-    fclose(fptr); /* Close the file */
-    buf[length] = 0; /* Null terminator */
-
-    return buf; /* Return the buffer */
-}
+   // return player;
+// }

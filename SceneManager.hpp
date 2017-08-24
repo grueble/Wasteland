@@ -1,12 +1,8 @@
 #ifndef _SCENE_MANAGER_HPP_
 #define _SCENE_MANAGER_HPP_
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <vector>
-
-#include "GameObjects.hpp"
-#include <glm/gtx/transform.hpp>
+#include "SceneGraph.hpp"
+// #include <glm/gtx/transform.hpp>
 
 // ***NOTE: this should eventually be refactored into a SceneManager
 // create scene class to store everything - vbo (coords, colors, +), mvps, etc.
@@ -18,27 +14,25 @@
 // point3_t look_at_point = { 0.0f, 0.0f, 0.0f };
 // vector3_t up_dir = { 0.0f, 1.0f, 0.0f };
 
-void getScene(std::vector<PhysObj*>& scene_objs); // oh we gettin data structures
-GLuint loadShaders(const char* vertex_fpath, const char* fragment_fpath);
-void loadTexture(const char* texture_fpath);
-char* filetobuf(const char *file);
+SceneNode* loadScene();
+// ActorNode* loadPlayer();
 
-class Scene
-{
-public:
-   Scene();
+// class Scene
+// {
+// public:
+//    Scene();
 
-   ~Scene();
+//    ~Scene();
 
-   void loadScene();
+//    void loadScene();
 
-   void drawScene();
+//    void drawScene();
 
-protected:
-   std::vector<PhysObj*> scene_objs; // primitive scene graph
+// protected:
+//    std::vector<PhysObj*> m_scene_root; // primitive scene graph
 
-   glm::mat4 m_projection;
-   glm::mat4 m_view;
-};
+//    glm::mat4 m_projection;
+//    glm::mat4 m_view;
+// };
 
 #endif

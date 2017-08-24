@@ -1,5 +1,3 @@
-#include <SDL.h>
-
 #include "SceneManager.hpp"
 
 #define PROGRAM_NAME "Wasteland"
@@ -7,8 +5,10 @@
 static const int SCREEN_WIDTH = 512;
 static const int SCREEN_HEIGHT = 512;
 
-SDL_Window* window;
+SDL_Window* window = NULL;
 SDL_GLContext glContext;
+SceneNode* root = NULL;
+// std::vector<ActorNode*> actors;
 
 /*
  * TODO :
@@ -25,6 +25,7 @@ SDL_GLContext glContext;
 
 bool init();
 void run();
+void handleKeyDown(const SDL_Event& e);
 void close();
 
 #undef main 
@@ -131,8 +132,17 @@ void run()
    glBindVertexArray(vao); // bind our VAO as the currently used obj.
 
    // resource initialization (vao / vbo!, shaders+, "filling", etc.)
-   Scene scene = Scene();
-   scene.loadScene();
+
+   root = loadScene();
+   // actors.push_back(loadPlayer());
+
+   dsec t(0.0);
+   dsec dt(1.0/60.0);
+
+   auto current_time = std::chrono::high_resolution_clock::now();
+   dsec accumulator(0.0); 
+
+   glm::mat4 view;
 
    // main loop
    while (!quit)
@@ -146,25 +156,59 @@ void run()
 				{
 					quit = true;
 				}
-            // case :
-            // handleKeyDown
-            // handleButtonDown
-            // these two functions should update the stored data about the player actor
+            case SDL_MOUSEBUTTONDOWN:
+            {
+               if (e.button.button == SDL_BUTTON_LEFT) {
+                  // handleLmbDown(e);
+               }
+               else if (e.button.button == SDL_BUTTON_RIGHT) {
+                  // handleRmbDown(e);
+               }
+            }
+            case SDL_KEYDOWN :
+            {
+               handleKeyDown(e);
+            }
          }
 		}
+
+      auto new_time = std::chrono::high_resolution_clock::now();
+      dsec frame_time = new_time - current_time;
+      current_time = new_time;
+      accumulator += frame_time;
+
+      while (accumulator >= dt)
+      {
+         // std::vector<ActorNode*>::iterator it;
+         // for (it = actors.begin(); it != actors.end(); ++it)
+         // {
+         //    (*it)->integrate(t, dt);
+         // }
+         accumulator -= dt;
+         t += dt;
+      }
+
       // doPhysics
       // this should handle phys (i.e. movement, collision det. and res., etc.) for every obj
 
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-      scene.drawScene(); // may want to pass view matrix as arg to this
+      root->render(view); // may want to pass view matrix as arg to this
       SDL_GL_SwapWindow(window); // swap buffers; finalized render frame
    }
+
    glDeleteVertexArrays(1, &vao); // this gets called b4 glDeleteBuffers... problem?
+}
+
+void handleKeyDown(const SDL_Event& e)
+{
+
 }
 
 // does a segfault invalidate my close() ? might need to call this earlier / more / better
 void close()
 {
+
+
 	// Delete our OpengL context
 	SDL_GL_DeleteContext(glContext);
 
