@@ -2,8 +2,8 @@
 
 #define PROGRAM_NAME "Wasteland"
 
-static const int SCREEN_WIDTH = 512;
-static const int SCREEN_HEIGHT = 512;
+static const int SCREEN_WIDTH = 1024;
+static const int SCREEN_HEIGHT = 640;
 
 SDL_Window* window = NULL;
 SDL_GLContext glContext;
@@ -23,9 +23,41 @@ SceneNode* root = NULL;
  * ---> ... how to format configuration information?
  */
 
+typedef struct vec3_s vec3_t;
+
+struct vec3_s
+{
+   vec3_s() :
+      x(0.0f),
+      y(0.0f),
+      z(0.0f)
+   { }
+
+   vec3_s(float a_x, float a_y, float a_z) :
+      x(a_x),
+      y(a_y),
+      z(a_z)
+   { }
+
+   float x, y, z;
+};
+
+struct eye_point 
+{
+   eye_point(vec3_t a_cam, vec3_t a_look_at, vec3_t a_up_dir) :
+      camera(a_cam),
+      look_at(a_look_at),
+      up_dir(a_up_dir)
+   {}
+
+   vec3_t camera;
+   vec3_t look_at;
+   vec3_t up_dir;
+};
+
 bool init();
 void run();
-void handleKeyDown(const SDL_Event& e);
+void handleKeyDown(const SDL_Event& e, glm::mat4& view, eye_point& eye);
 void close();
 
 #undef main 
@@ -134,6 +166,8 @@ void run()
    // resource initialization (vao / vbo!, shaders+, "filling", etc.)
 
    root = loadScene();
+   // root->update();
+
    // actors.push_back(loadPlayer());
 
    dsec t(0.0);
@@ -142,7 +176,19 @@ void run()
    auto current_time = std::chrono::high_resolution_clock::now();
    dsec accumulator(0.0); 
 
-   glm::mat4 view;
+   eye_point eye = eye_point(
+      vec3_t(0.0f, 0.0f, 20.0f), 
+      vec3_t(0.0f, 0.0f, 0.0f), 
+      vec3_t(0.0f, 1.0f, 0.0f)
+   );
+
+   glm::mat4 view = glm::lookAt(
+      glm::vec3(eye.camera.x, eye.camera.y, eye.camera.z),
+      glm::vec3(eye.look_at.x, eye.look_at.y, eye.look_at.z),
+      glm::vec3(eye.up_dir.x, eye.up_dir.y, eye.up_dir.z)
+   );
+
+   int count = 0;
 
    // main loop
    while (!quit)
@@ -155,6 +201,7 @@ void run()
 				case SDL_QUIT :
 				{
 					quit = true;
+               break;
 				}
             case SDL_MOUSEBUTTONDOWN:
             {
@@ -164,10 +211,12 @@ void run()
                else if (e.button.button == SDL_BUTTON_RIGHT) {
                   // handleRmbDown(e);
                }
+               break;
             }
             case SDL_KEYDOWN :
             {
-               handleKeyDown(e);
+               handleKeyDown(e, view, eye);
+               break;
             }
          }
 		}
@@ -183,6 +232,7 @@ void run()
          // for (it = actors.begin(); it != actors.end(); ++it)
          // {
          //    (*it)->integrate(t, dt);
+         //    (*it)->update();
          // }
          accumulator -= dt;
          t += dt;
@@ -194,20 +244,77 @@ void run()
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       root->render(view); // may want to pass view matrix as arg to this
       SDL_GL_SwapWindow(window); // swap buffers; finalized render frame
+
+      count++;
+      if (count > 2)
+      {
+         // quit = true;
+      }
    }
 
    glDeleteVertexArrays(1, &vao); // this gets called b4 glDeleteBuffers... problem?
 }
 
-void handleKeyDown(const SDL_Event& e)
+void handleKeyDown(const SDL_Event& e, glm::mat4& view, eye_point& eye)
 {
-
+   switch(e.key.keysym.sym)
+   {
+      case SDLK_LEFT :
+      {
+         // glm::vec4 camera_pt(eye.camera.x, eye.camera.y, eye.camera.z, 1.0f);
+         // glm::vec4 look_at_pt(eye.look_at.x, eye.look_at.y, eye.look_at.z, 1.0f);
+         // glm::mat4 xform = glm::translate(glm::mat4(), glm::vec3(-1.0f, 0.0f, 0.0f));
+         // glm::vec4 new_camera = camera_pt * xform;
+         // glm::vec4 new_look_at = look_at_pt * xform; 
+         eye.camera.x = eye.camera.x - 0.5f;
+         eye.look_at.x = eye.look_at.x - 0.5f;
+         view = glm::lookAt(
+            glm::vec3(eye.camera.x, eye.camera.y, eye.camera.z),
+            glm::vec3(eye.look_at.x, eye.look_at.y, eye.look_at.z),
+            glm::vec3(eye.up_dir.x, eye.up_dir.y, eye.up_dir.z)
+         );
+         break;
+      }
+      case SDLK_UP :
+      {
+         eye.camera.y = eye.camera.y + 0.5f;
+         eye.look_at.y = eye.look_at.y + 0.5f;
+         view = glm::lookAt(
+            glm::vec3(eye.camera.x, eye.camera.y, eye.camera.z),
+            glm::vec3(eye.look_at.x, eye.look_at.y, eye.look_at.z),
+            glm::vec3(eye.up_dir.x, eye.up_dir.y, eye.up_dir.z)
+         );
+         break;
+      }
+      case SDLK_RIGHT :
+      {
+         eye.camera.x = eye.camera.x + 0.5f;
+         eye.look_at.x = eye.look_at.x + 0.5f;
+         view = glm::lookAt(
+            glm::vec3(eye.camera.x, eye.camera.y, eye.camera.z),
+            glm::vec3(eye.look_at.x, eye.look_at.y, eye.look_at.z),
+            glm::vec3(eye.up_dir.x, eye.up_dir.y, eye.up_dir.z)
+         );
+         break;
+      }
+      case SDLK_DOWN :
+      {
+         eye.camera.y = eye.camera.y - 0.5f;
+         eye.look_at.y = eye.look_at.y - 0.5f;
+         view = glm::lookAt(
+            glm::vec3(eye.camera.x, eye.camera.y, eye.camera.z),
+            glm::vec3(eye.look_at.x, eye.look_at.y, eye.look_at.z),
+            glm::vec3(eye.up_dir.x, eye.up_dir.y, eye.up_dir.z)
+         );
+         break;
+      }
+   }
 }
 
 // does a segfault invalidate my close() ? might need to call this earlier / more / better
 void close()
 {
-
+   delete root;
 
 	// Delete our OpengL context
 	SDL_GL_DeleteContext(glContext);

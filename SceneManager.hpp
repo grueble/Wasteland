@@ -15,7 +15,7 @@
 // vector3_t up_dir = { 0.0f, 1.0f, 0.0f };
 
 SceneNode* loadScene();
-// ActorNode* loadPlayer();
+ActorNode* loadPlayer();
 
 // class Scene
 // {

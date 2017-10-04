@@ -44,6 +44,12 @@ struct material_s
 
 struct phys_data_s
 {
+   phys_data_s() :
+      vel(),
+      mass(0)
+   {
+   }
+
    vec2_t vel; // or ray2_t? either way, vel as vector
    // m_position is stored as m_world_xform
    float mass;
@@ -78,6 +84,8 @@ struct PhysObj
       type(a_type),
       p(position)
    { }
+
+   void setPosition(vec2_t position); // generate position from glm::mat4 world_xform, called within SceneNode::update 
 
    virtual AABB_t* asAABB() { return nullptr; }
    virtual Circle* asCircle() { return nullptr; }
@@ -130,12 +138,15 @@ struct Circle : public PhysObj
 
 struct Triangle : public PhysObj // axis-aligned right triangle
 {
-   Triangle(vec2_t position, vec2_t a_xw, vec2_t a_yw, vec2_t a_third_axis) :
+   Triangle(vec2_t position, vec2_t a_xw, vec2_t a_yw) : // , vec2_t a_third_axis) :
       PhysObj(PhysObj_e::TRI, position),
       xw(a_xw),
-      yw(a_yw),
-      third_axis(a_third_axis)
-   { }
+      yw(a_yw) // ,
+      // third_axis(a_third_axis)
+   { 
+      third_axis = vec2_t(xw.x, yw.y);
+      normalize(third_axis);
+   }
 
    virtual Triangle* asTriangle() { return this; }
 

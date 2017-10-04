@@ -44,8 +44,7 @@ protected:
    // std::vector<float> m_position;
    // std::vector<float> m_color;
    // std::vector<float> m_tex_coords;
-   std::vector<float> m_vertices;
-
+   std::vector<float> m_vertices; 
    GLuint m_vbo;
    GLuint m_ebo;
 

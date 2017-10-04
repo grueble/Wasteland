@@ -26,8 +26,8 @@ RenderObj::~RenderObj()
    glDeleteBuffers(1, &m_vbo);
    // glDeleteBuffers(3, m_vbo);
    glDeleteBuffers(1, &m_ebo);
-   glDeleteProgram(m_shader_program_id);
    glDeleteTextures(1, &m_texture);
+   glDeleteProgram(m_shader_program_id);
 }
 
 void RenderObj::loadTexture(const char* fpath)
@@ -49,6 +49,7 @@ void RenderObj::loadTexture(const char* fpath)
       glGenerateMipmap(GL_TEXTURE_2D);
       SDL_FreeSurface(loaded_img);
    }
+   glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 RenderTri::RenderTri(GLuint shader_program_id, 
@@ -115,19 +116,14 @@ void RenderTri::render(glm::mat4 mvp)
    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));
    glEnableVertexAttribArray(2); // uv coord. attrib.
 
-   GLuint texture;
-   glGenTextures(1, &texture);
+   glBindTexture(GL_TEXTURE_2D, m_texture);
 
    glUseProgram(m_shader_program_id);
-
-   glActiveTexture(GL_TEXTURE0);
-   glBindTexture(GL_TEXTURE_2D, m_texture);
-   glUniform1i(m_texture_id, 0);
-
    glUniformMatrix4fv(m_mvp_id, 1, GL_FALSE, &mvp[0][0]);
 
    glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
 
+   glBindTexture(GL_TEXTURE_2D, 0);
    glUseProgram(0);
    glDisableVertexAttribArray(0); 
    glDisableVertexAttribArray(1);
@@ -199,19 +195,14 @@ void RenderQuad::render(glm::mat4 mvp)
    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));
    glEnableVertexAttribArray(2);
 
-   GLuint texture;
-   glGenTextures(1, &texture);
+   glBindTexture(GL_TEXTURE_2D, m_texture);
 
    glUseProgram(m_shader_program_id);
-
-   glActiveTexture(GL_TEXTURE0);
-   glBindTexture(GL_TEXTURE_2D, m_texture);
-   glUniform1i(m_texture_id, 0);
-
    glUniformMatrix4fv(m_mvp_id, 1, GL_FALSE, &mvp[0][0]);
 
-   glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+   glBindTexture(GL_TEXTURE_2D, 0);
    glUseProgram(0);
    glDisableVertexAttribArray(0); 
    glDisableVertexAttribArray(1);

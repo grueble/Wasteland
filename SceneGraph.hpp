@@ -17,15 +17,19 @@ static glm::mat4 m_projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0
 class SceneNode // adaptive binary search tree !!!
 {
 public:
-   SceneNode(RenderObj* mesh, PhysObj* hitbox, glm::mat4 local_xform, glm::mat4 world_xform);
+   SceneNode(RenderObj* mesh, PhysObj* hitbox); //, glm::mat4 local_xform, glm::mat4 world_xform);
 
    ~SceneNode();
 
-   virtual void addChild(SceneNode* node);
+   void setXform(glm::mat4 local_xform) { m_local_xform = local_xform; }
+
+   void addChild(SceneNode* node);
 
    virtual void update();
 
    virtual void render(glm::mat4 view); // only render if m_render_obj != NULL
+
+   virtual void collide(SceneNode* node);
 
 protected:
    SceneNode* m_parent;
@@ -38,37 +42,41 @@ protected:
    std::vector<SceneNode*> m_children;
 };
 
-// class GeomNode : public SceneNode // static physical geometry of the scene
-// {
-// public:
-//    GeomNode(RenderObj* mesh, PhysObj* hitbox, glm::mat4 local_xform, glm::mat4 world_xform);
+class GeomNode : public SceneNode // static physical geometry of the scene
+{
+public:
+   GeomNode(RenderObj* mesh, PhysObj* hitbox); //, glm::mat4 local_xform, glm::mat4 world_xform);
 
-//    ~GeomNode();
+   ~GeomNode();
 
-//    // void update();
+   void update();
 
-//    // void render(glm::mat4 view);
+   void render(glm::mat4 view);
 
-// protected:
-//    material_t m_material;
-// };
+   void collide(SceneNode* node);
 
-// class ActorNode : public SceneNode // dynamic physical geometry of the scene
-// {
-// public:
-//    // one option: only one of PC/NPC's nodes is dynamic (top-level)
-//    ActorNode(RenderObj* mesh, PhysObj* hitbox, glm::mat4 local_xform, glm::mat4 world_xform, phys_data_s data);
+protected:
+   material_t m_material;
+};
 
-//    ~ActorNode();
+class ActorNode : public SceneNode // dynamic physical geometry of the scene
+{
+public:
+   // one option: only one of PC/NPC's nodes is dynamic (top-level)
+   ActorNode(RenderObj* mesh, PhysObj* hitbox); //, glm::mat4 local_xform, glm::mat4 world_xform);
 
-//    // void update();
+   ~ActorNode();
 
-//    // void render(glm::mat4 view);
+   void update();
 
-//    void integrate(dsec a_t, dsec a_dt); // called within update??
+   void render(glm::mat4 view);
 
-// protected:
-//    phys_data_s m_phys_data;
-// };
+   void collide(SceneNode* node);
+
+   void integrate(dsec a_t, dsec a_dt); // called within update??
+
+protected:
+   phys_data_s m_phys_data;
+};
 
 #endif
