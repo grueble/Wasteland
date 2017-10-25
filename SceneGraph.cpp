@@ -1,154 +1,62 @@
 #include "SceneGraph.hpp"
 #include <iostream>
 
-SceneNode::SceneNode(RenderObj* mesh,
-                     PhysObj* hitbox) : // , 
-                     // glm::mat4 local_xform,
-                     // glm::mat4 world_xform) :
-   m_mesh(mesh),
-   m_hitbox(hitbox) //,
-   // m_local_xform(local_xform),
-   // m_world_xform(world_xform)
-{
-   m_parent = NULL;
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// - Node
+//
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Node::Node(PhysicsComponent* physics, 
+           GraphicsComponent* graphics, 
+           vec3_t position) :
+   parent_(NULL),
+   physics_(physics),
+   graphics_(graphics),
+   position_(position),
+   local_xform_(glm::translate(glm::mat4(), glm::vec3(position.x, position.y, position.z)))
+{ 
+
 }
 
-SceneNode::~SceneNode()
+Node::~Node()
 {
-   if (m_mesh) { delete m_mesh; }
-   if (m_hitbox) { delete m_hitbox; }
+   if (physics_) { delete physics_; }
+   if (graphics_) { delete graphics_; }
 
-   std::vector<SceneNode*>::iterator it;
-   for (it = m_children.begin(); it != m_children.end(); ++it)
+   std::vector<Node*>::iterator it;
+   for (it = children_.begin(); it != children_.end(); ++it)
    {
       delete *it;
    }
 }
 
-void SceneNode::addChild(SceneNode* node)
+void Node::addChild(Node* node)
 {
-   m_children.push_back(node);
-   node->m_parent = this;
+   children_.push_back(node); // need a move constructor / assignment operator
+   node->parent_ = this;
 }
 
-void SceneNode::update()
+void Node::update(Renderer_t& renderer, glm::mat4 view)
 {
-   if (m_parent) {
-      m_world_xform = m_parent->m_world_xform * m_local_xform;
+   if (parent_) {
+      world_xform_ = parent_->world_xform_ * local_xform_;
    }
    else { // root node
-      m_world_xform = m_local_xform;
+      world_xform_ = local_xform_;
    }
-
-   if (m_hitbox) {
-      // generate / update hitbox position
-   }
-
-   std::vector<SceneNode*>::iterator it;
-   for (it = m_children.begin(); it != m_children.end(); ++it)
+   if (physics_)
    {
-      (*it)->update();
+      physics_->update();//world);
    }
-}
 
-void SceneNode::render(glm::mat4 view) // basic rendering on GL tris / elements
-{
-   // do collide with world projection / screen projection here. VIEW CULLING V_V
-
-   if (m_mesh) 
+   if (graphics_)
    {
-      m_mesh->render(m_projection * view * m_world_xform);
+      graphics_->update(renderer, projection_ * view);// * world_xform_);
    }
 
-   if (m_children.size() > 0)
+   std::vector<Node*>::iterator it;
+   for (it = children_.begin(); it != children_.end(); ++it)
    {
-      std::vector<SceneNode*>::iterator it;
-      for (it = m_children.begin(); it != m_children.end(); ++it)
-      {
-         (*it)->render(view);
-      }
+      (*it)->update(renderer, view);
    }
-}
-
-void SceneNode::collide(SceneNode* node)
-{
-   if (node->m_hitbox)
-   {
-
-   }
-   else
-   {
-      std::vector<SceneNode*>::iterator it;
-      for (it = m_children.begin(); it != m_children.end(); ++it)
-      {
-         // (*it)->collide
-      }
-   }
-}
-
-GeomNode::GeomNode(RenderObj* mesh,
-                   PhysObj* hitbox) : // , 
-                   // glm::mat4 local_xform,
-                   // glm::mat4 world_xform) : // ,
-                   // material_t material) :
-   SceneNode(mesh, hitbox) //, local_xform, world_xform) // ,
-   // m_material(material)
-{
-
-}
-
-GeomNode::~GeomNode()
-{
-
-}
-
-void GeomNode::update()
-{
-   SceneNode::update();
-}
-
-void GeomNode::render(glm::mat4 view)
-{
-   SceneNode::render(view);
-}
-
-void GeomNode::collide(SceneNode* node)
-{
-
-}
-
-ActorNode::ActorNode(RenderObj* mesh,
-                     PhysObj* hitbox) : // , 
-                     // glm::mat4 local_xform,
-                     // glm::mat4 world_xform) : // ,
-                     // phys_data_s data) :
-   SceneNode(mesh, hitbox), //, local_xform, world_xform), // ,
-   m_phys_data()
-{
-
-}
-
-ActorNode::~ActorNode()
-{
-
-}
-
-void ActorNode::update()
-{
-   SceneNode::update();
-}
-
-void ActorNode::render(glm::mat4 view)
-{
-   SceneNode::render(view);
-}
-
-void ActorNode::collide(SceneNode* node)
-{
-
-}
-
-void ActorNode::integrate(dsec a_t, dsec a_dt)
-{
-
 }

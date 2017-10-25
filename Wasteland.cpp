@@ -1,3 +1,6 @@
+#include <chrono>
+
+#include "OpenGLGraphics.hpp"
 #include "SceneManager.hpp"
 
 #define PROGRAM_NAME "Wasteland"
@@ -5,10 +8,10 @@
 static const int SCREEN_WIDTH = 1024;
 static const int SCREEN_HEIGHT = 640;
 
+typedef std::chrono::duration<double> dsec;
+
 SDL_Window* window = NULL;
 SDL_GLContext glContext;
-SceneNode* root = NULL;
-// std::vector<ActorNode*> actors;
 
 /*
  * TODO :
@@ -22,25 +25,6 @@ SceneNode* root = NULL;
  * ---> but is YAML the best choice? compare alternatives for configuration files
  * ---> ... how to format configuration information?
  */
-
-typedef struct vec3_s vec3_t;
-
-struct vec3_s
-{
-   vec3_s() :
-      x(0.0f),
-      y(0.0f),
-      z(0.0f)
-   { }
-
-   vec3_s(float a_x, float a_y, float a_z) :
-      x(a_x),
-      y(a_y),
-      z(a_z)
-   { }
-
-   float x, y, z;
-};
 
 struct eye_point 
 {
@@ -158,17 +142,23 @@ void run()
    glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
    glClearDepth(1.0); // this is default value (=1)
 
-   /* create a Vertex Array Object and set it as current */
-   GLuint vao; // create Vertex Array Object handle
-   glGenVertexArrays(1, &vao); // allocate + assign a VAO to our handle
-   glBindVertexArray(vao); // bind our VAO as the currently used obj.
+   Renderer_t renderer;
+   renderer.init();
 
-   // resource initialization (vao / vbo!, shaders+, "filling", etc.)
+   SceneManager scene_mngr(renderer);
+   Node& world_root = scene_mngr.getWorld();
 
-   root = loadScene();
-   // root->update();
+   // PhysicsComponent* p_comp = new  
+   // int player_mesh = renderer.createMesh("./assets/player.png", 0)
 
-   // actors.push_back(loadPlayer());
+   // Node player
+
+   // AABB_t hitbox((vec2_t){0.0f, 0.0f}, (vec2_t){5.0f, 0.0f}, (vec2_t){0.0f, 5.0f});
+
+   // int mesh_index = renderer.createMesh("./assets/dune_glitch.png", 
+   //                                      0, 
+   //                                      hitbox.getVertices(), 
+   //                                      hitbox.getIndices());
 
    dsec t(0.0);
    dsec dt(1.0/60.0);
@@ -177,9 +167,9 @@ void run()
    dsec accumulator(0.0); 
 
    eye_point eye = eye_point(
-      vec3_t(0.0f, 0.0f, 20.0f), 
-      vec3_t(0.0f, 0.0f, 0.0f), 
-      vec3_t(0.0f, 1.0f, 0.0f)
+      vec3_t(0.0f, 0.0f, 20.0f), // camera
+      vec3_t(0.0f, 0.0f, 0.0f),  // look at
+      vec3_t(0.0f, 1.0f, 0.0f)   // up dir
    );
 
    glm::mat4 view = glm::lookAt(
@@ -187,8 +177,6 @@ void run()
       glm::vec3(eye.look_at.x, eye.look_at.y, eye.look_at.z),
       glm::vec3(eye.up_dir.x, eye.up_dir.y, eye.up_dir.z)
    );
-
-   int count = 0;
 
    // main loop
    while (!quit)
@@ -238,21 +226,13 @@ void run()
          t += dt;
       }
 
-      // doPhysics
-      // this should handle phys (i.e. movement, collision det. and res., etc.) for every obj
-
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-      root->render(view); // may want to pass view matrix as arg to this
+      // renderer.render(mesh_index, projection_ * view * glm::mat4(1.0));
+      world_root.update(renderer, view);
       SDL_GL_SwapWindow(window); // swap buffers; finalized render frame
-
-      count++;
-      if (count > 2)
-      {
-         // quit = true;
-      }
    }
 
-   glDeleteVertexArrays(1, &vao); // this gets called b4 glDeleteBuffers... problem?
+   renderer.close();
 }
 
 void handleKeyDown(const SDL_Event& e, glm::mat4& view, eye_point& eye)
@@ -314,8 +294,6 @@ void handleKeyDown(const SDL_Event& e, glm::mat4& view, eye_point& eye)
 // does a segfault invalidate my close() ? might need to call this earlier / more / better
 void close()
 {
-   delete root;
-
 	// Delete our OpengL context
 	SDL_GL_DeleteContext(glContext);
 

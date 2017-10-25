@@ -1,9 +1,12 @@
-#ifndef _GAME_PHYSICS_HPP_
-#define _GAME_PHYSICS_HPP_
+#ifndef _PHYSICS_HPP_
+#define _PHYSICS_HPP_
+
+#include <vector>
 
 // gravity const!!!
 
 typedef struct vec2_s vec2_t;
+typedef struct vec3_s vec3_t;
 typedef struct ray2_s ray2_t;
 typedef struct material_s material_t;
 typedef struct AABB AABB_t; // wtf whyyyyyyy???
@@ -27,6 +30,23 @@ struct vec2_s
    { }
 
    float x, y;
+};
+
+struct vec3_s
+{
+   vec3_s() :
+      x(0.0f),
+      y(0.0f),
+      z(0.0f)
+   { }
+
+   vec3_s(float a_x, float a_y, float a_z) :
+      x(a_x),
+      y(a_y),
+      z(a_z)
+   { }
+
+   float x, y, z;
 };
 
 // NOTE: for a projection vector (ray) the magnitude is the penetration depth
@@ -61,10 +81,9 @@ enum PhysObj_e
    AABB,
    CIRCLE,
    TRI,
-   RECT,
-   LINE
+   // RECT,
+   // LINE
 };
-
 const vec2_t X_AXIS = vec2_t(1.0f, 0.0f);
 const vec2_t Y_AXIS = vec2_t(0.0f, 1.0f);
 
@@ -75,9 +94,11 @@ float scalar_proj(const vec2_t& a, const vec2_t& b);
 vec2_t vector_proj(const vec2_t& a, const vec2_t& b);
 float magnitude(const vec2_t& v);
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
 // - PhysObj & children
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 struct PhysObj
 {
    PhysObj(PhysObj_e a_type, vec2_t position) :
@@ -85,15 +106,12 @@ struct PhysObj
       p(position)
    { }
 
-   void setPosition(vec2_t position); // generate position from glm::mat4 world_xform, called within SceneNode::update 
-
    virtual AABB_t* asAABB() { return nullptr; }
    virtual Circle* asCircle() { return nullptr; }
    virtual Triangle* asTriangle() { return nullptr; }
 
-   // virtual bool collide(PhysObj* other) = 0;
-
-   // virtual int getAxes(std::vector<vec2_t> axes) = 0;
+   virtual std::vector<float> getVertices() = 0;
+   virtual std::vector<unsigned int> getIndices() = 0;
 
    // returns half length of projection onto given axis
    virtual float projectOntoAxis(vec2_t axis) = 0;
@@ -104,15 +122,18 @@ struct PhysObj
 
 struct AABB : public PhysObj // axis-aligned bounding box
 {
-   AABB(vec2_t position, vec2_t a_xw, vec2_t a_yw) :
-      PhysObj(PhysObj_e::AABB, position),
+   AABB(vec2_t p, vec2_t a_xw, vec2_t a_yw) :
+      PhysObj(PhysObj_e::AABB, p),
       xw(a_xw),
       yw(a_yw)
    { }
 
-   virtual AABB_t* asAABB() { return this; }
+   AABB_t* asAABB() { return this; }
 
-   float projectOntoAxis(vec2_t axis) {
+   std::vector<float> getVertices() override;
+   std::vector<unsigned int> getIndices() override;
+
+   float projectOntoAxis(vec2_t axis) override {
       return scalar_proj(xw, axis) + scalar_proj(yw, axis);
    }
 
@@ -122,14 +143,17 @@ struct AABB : public PhysObj // axis-aligned bounding box
 
 struct Circle : public PhysObj
 {
-   Circle(vec2_t position, float radius) :
-      PhysObj(PhysObj_e::CIRCLE, position),
+   Circle(vec2_t p, float radius) :
+      PhysObj(PhysObj_e::CIRCLE, p),
       r(radius)
    { }
 
-   virtual Circle* asCircle() { return this; }
+   Circle* asCircle() override { return this; }
 
-   float projectOntoAxis(vec2_t axis) {
+   std::vector<float> getVertices() override;
+   std::vector<unsigned int> getIndices() override;
+
+   float projectOntoAxis(vec2_t axis) override {
       return r;
    }
 
@@ -138,59 +162,27 @@ struct Circle : public PhysObj
 
 struct Triangle : public PhysObj // axis-aligned right triangle
 {
-   Triangle(vec2_t position, vec2_t a_xw, vec2_t a_yw) : // , vec2_t a_third_axis) :
-      PhysObj(PhysObj_e::TRI, position),
+   Triangle(vec2_t p, vec2_t a_xw, vec2_t a_yw) :
+      PhysObj(PhysObj_e::TRI, p),
       xw(a_xw),
-      yw(a_yw) // ,
-      // third_axis(a_third_axis)
+      yw(a_yw)
    { 
       third_axis = vec2_t(xw.x, yw.y);
       normalize(third_axis);
    }
 
-   virtual Triangle* asTriangle() { return this; }
+   Triangle* asTriangle() override { return this; }
 
-   float projectOntoAxis(vec2_t axis) {
+   std::vector<float> getVertices() override;
+   std::vector<unsigned int> getIndices() override;
+
+   float projectOntoAxis(vec2_t axis) override {
       return scalar_proj(xw, axis) + scalar_proj(yw, axis);
    }
 
    // x and y aligned legs
    vec2_t xw, yw, third_axis;
 };
-
-// struct Rectangle : public PhysObj // non-axis-aligned; halwidth vectors have mag & dir
-// {
-//    Rectangle(vec2_t position, ray2_t a_xw, ray2_t a_yw) :
-//       PhysObj(PhysObj_e::RECT, position),
-//       xw(a_xw),
-//       yw(a_yw)
-//    { }
-
-//    ray2_t xw, yw;
-// };
-
-// struct Line : PhysObj // NOTE: not a segment, use equation
-// {
-//    // fill in future
-// };
-
-// struct Triangle : public PhysObj // non-axis-aligned; halwidth vectors have mag & dir
-// {
-//    Triangle(vec2_t position, ray2_t a_xw, ray2_t a_yw, vec2_t a_3rd_axis) :
-//       PhysObj(TRIANGLE, position),
-//       xw(a_xw),
-//       yw(a_yw),
-//       3rd_axis(a_3rd_axis)
-//    { }
-
-//    float projectOntoAxis(vec2_t axis) {
-//       return scalar_proj(xw, axis) + scalar_proj(yw, axis);
-//    }
-
-//    // x and y aligned legs
-//    ray2_t xw, yw; 
-//    vec2_t 3rd_axis;
-// };
 
 struct Manifold
 {
@@ -201,10 +193,16 @@ struct Manifold
    // glm::vec2 normal; 
 };
 
-// PhysObj collision functions
-bool AABBvsAABB(Manifold* m);
-bool AABBvsCircle(Manifold* m);
-bool CirclevsCircle(Manifold *m);
-bool AABBvsTriangle(Manifold* m);
+
+class PhysEngine
+{
+public:
+
+private:
+   bool AABBvsAABB(Manifold* m);
+   bool AABBvsCircle(Manifold* m);
+   bool CirclevsCircle(Manifold* m);
+   bool AABBvsTriangle(Manifold* m);
+};
 
 #endif

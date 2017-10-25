@@ -1,82 +1,47 @@
 #ifndef _SCENE_GRAPH_HPP_
 #define _SCENE_GRAPH_HPP_
 
-#include <chrono>
+#include "PhysicsComponent.hpp"
+#include "GraphicsComponent.hpp"
 
-#include "GamePhysics.hpp"
-#include "RenderObjects.hpp" // <vector>
-
-typedef std::chrono::duration<double> dsec;
-
-static glm::mat4 m_projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f);
+static glm::mat4 projection_ = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f);
 // glm::mat4 projection = glm::ortho(-10.0f,10.0f,-10.0f,10.0f,0.0f,100.0f);
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// - SceneNode & children
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class SceneNode // adaptive binary search tree !!!
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// - Node
+//
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+class Node // NEED copy & move businesss
 {
 public:
-   SceneNode(RenderObj* mesh, PhysObj* hitbox); //, glm::mat4 local_xform, glm::mat4 world_xform);
+   Node(PhysicsComponent* physics, 
+        GraphicsComponent* graphics, 
+        vec3_t position);
 
-   ~SceneNode();
+   ~Node();
 
-   void setXform(glm::mat4 local_xform) { m_local_xform = local_xform; }
+   Node( const Node & ) = delete; // not copy-constructable
+   Node & operator=( const Node & ) = delete; // not copyable
 
-   void addChild(SceneNode* node);
+   Node( Node && ); // move constructor
+   Node & operator=( Node && ); // move assignment operator
 
-   virtual void update();
+   void addChild(Node* node);
 
-   virtual void render(glm::mat4 view); // only render if m_render_obj != NULL
-
-   virtual void collide(SceneNode* node);
-
-protected:
-   SceneNode* m_parent;
-   RenderObj* m_mesh; // all render data & functions
-   PhysObj* m_hitbox;
-
-   glm::mat4 m_local_xform; // translation * rotation * scale
-   glm::mat4 m_world_xform; // model matrix for vert shader
-
-   std::vector<SceneNode*> m_children;
-};
-
-class GeomNode : public SceneNode // static physical geometry of the scene
-{
-public:
-   GeomNode(RenderObj* mesh, PhysObj* hitbox); //, glm::mat4 local_xform, glm::mat4 world_xform);
-
-   ~GeomNode();
-
-   void update();
-
-   void render(glm::mat4 view);
-
-   void collide(SceneNode* node);
+   void update(Renderer_t& renderer, glm::mat4 view);
 
 protected:
-   material_t m_material;
-};
+   Node* parent_;
+   PhysicsComponent* physics_;
+   GraphicsComponent* graphics_;
 
-class ActorNode : public SceneNode // dynamic physical geometry of the scene
-{
-public:
-   // one option: only one of PC/NPC's nodes is dynamic (top-level)
-   ActorNode(RenderObj* mesh, PhysObj* hitbox); //, glm::mat4 local_xform, glm::mat4 world_xform);
+   vec3_t position_;
 
-   ~ActorNode();
+   glm::mat4 local_xform_; // translation * rotation * scale
+   glm::mat4 world_xform_; // model matrix for vert shader
 
-   void update();
-
-   void render(glm::mat4 view);
-
-   void collide(SceneNode* node);
-
-   void integrate(dsec a_t, dsec a_dt); // called within update??
-
-protected:
-   phys_data_s m_phys_data;
+   std::vector<Node*> children_;
 };
 
 #endif

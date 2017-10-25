@@ -1,17 +1,16 @@
 #include <cmath> // "math.h"
-#include "GamePhysics.hpp"
-
-// do i need special cases for circle?!?
+#include "Physics.hpp"
 
 // for curved edge tiles, detect VR as a initial test to remove certain cases
 
 // for next time, determine importance of sign in proj vec - do i need to check this?
-// ALSO TEST TIME
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
 // - PhysObj Collision Functions
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-bool AABBvsAABB(Manifold* m)
+//
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+bool PhysEngine::AABBvsAABB(Manifold* m)
 {
    AABB_t* a = m->a->asAABB();
    AABB_t* b = m->b->asAABB();
@@ -45,7 +44,7 @@ bool AABBvsAABB(Manifold* m)
    return false;
 }
 
-bool AABBvsCircle(Manifold* m)
+bool PhysEngine::AABBvsCircle(Manifold* m)
 {
    AABB_t* a = m->a->asAABB();
    Circle* b = m->b->asCircle();
@@ -119,7 +118,7 @@ bool AABBvsCircle(Manifold* m)
    return false;
 }
 
-bool CirclevsCircle(Manifold *m)
+bool PhysEngine::CirclevsCircle(Manifold* m)
 {
    Circle* a = m->a->asCircle();
    Circle* b = m->b->asCircle();
@@ -140,7 +139,7 @@ bool CirclevsCircle(Manifold *m)
    return false;
 }
 
-bool AABBvsTriangle(Manifold* m)
+bool PhysEngine::AABBvsTriangle(Manifold* m)
 {
    AABB_t* a = m->a->asAABB();
    Triangle* b = m->b->asTriangle();
@@ -231,9 +230,11 @@ bool AABBvsTriangle(Manifold* m)
    return false;
 }
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
 // - Geometric Projection Functions
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 void normalize(vec2_t& v)
 {
    // calculate magnitude
@@ -273,4 +274,76 @@ vec2_t vector_proj(const vec2_t& a, const vec2_t& b) // project a onto b
 float magnitude(const vec2_t& v)
 {
    return sqrt( ( v.x * v.x ) + ( v.y * v.y ) );
+}
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// - PhysObj Utility Functions
+//
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+std::vector<float> AABB::getVertices()
+{
+   std::vector<float> vertices = {
+      // position              // color           // uv coords
+      p.x - xw.x, p.y + yw.y,  0.0f, 0.0f, 0.0f,  0.0f, 0.0f,  // top-left
+      p.x + xw.x, p.y + yw.y,  0.0f, 0.0f, 0.0f,  1.0f, 0.0f,  // top-right
+      p.x + xw.x, p.y - yw.y,  0.0f, 0.0f, 0.0f,  1.0f, 1.0f,  // bottom-right
+      p.x - xw.x, p.y - yw.y,  0.0f, 0.0f, 0.0f,  0.0f, 1.0f   // bottom-left
+   };
+
+   return vertices;
+}
+
+std::vector<unsigned int> AABB::getIndices()
+{
+   std::vector<unsigned int> indices = {
+      0, 1, 2, // first triangle
+      2, 0, 3  // second triangle
+   };
+
+   return indices;
+}
+
+std::vector<float> Circle::getVertices()
+{
+   std::vector<float> vertices = {
+      // position        // color           // uv coords
+      p.x - r, p.y + r,  0.0f, 0.0f, 0.0f,  0.0f, 0.0f,  // top-left
+      p.x + r, p.y + r,  0.0f, 0.0f, 0.0f,  1.0f, 0.0f,  // top-right
+      p.x + r, p.y - r,  0.0f, 0.0f, 0.0f,  1.0f, 1.0f,  // bottom-right
+      p.x - r, p.y - r,  0.0f, 0.0f, 0.0f,  0.0f, 1.0f   // bottom-left
+   };
+
+   return vertices;
+}
+
+std::vector<unsigned int> Circle::getIndices()
+{
+   std::vector<unsigned int> indices = {
+      0, 1, 2, // first triangle
+      2, 0, 3  // second triangle
+   };
+
+   return indices;
+}
+
+std::vector<float> Triangle::getVertices()
+{
+   std::vector<float> vertices = {
+      // position       // color           // uv coords
+      p.x, p.y + yw.y,  0.0f, 0.0f, 0.0f,  0.0f, 0.0f,  // top-left
+      p.x, p.y,         0.0f, 0.0f, 0.0f,  0.0f, 1.0f,  // bottom-left
+      p.x + xw.x, p.y,  0.0f, 0.0f, 0.0f,  1.0f, 1.0f   // bottom-right
+   };
+
+   return vertices;
+}
+
+std::vector<unsigned int> Triangle::getIndices()
+{
+   std::vector<unsigned int> indices = {
+      0, 1, 2
+   };
+
+   return indices;
 }
