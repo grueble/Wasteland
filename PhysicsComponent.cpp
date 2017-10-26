@@ -1,9 +1,41 @@
 #include "PhysicsComponent.hpp"
 #include <iostream>
 
+PhysicsComponent::PhysicsComponent(PhysObj* volume) :
+   volume_(volume)
+{ }
+
 PhysicsComponent::~PhysicsComponent()
 {
-   delete hitbox_;
+   delete volume_;
+}
+
+PhysicsComponent::PhysicsComponent( PhysicsComponent && other ) :
+   volume_(nullptr)
+{
+   *this = std::move(other);
+}
+
+PhysicsComponent& PhysicsComponent::operator=( PhysicsComponent && other )
+{
+   if (this != &other)
+   {
+      // free any current resources
+      delete volume_;
+
+      // pilfer other's resources
+      volume_ = other.volume_;
+
+      // reset other
+      other.volume_ = nullptr;
+   }
+
+   return *this;
+}
+
+PhysObj& PhysicsComponent::getVolume()
+{
+   return *volume_;
 }
 
 void PhysicsComponent::update()//Node& world)
@@ -11,22 +43,11 @@ void PhysicsComponent::update()//Node& world)
 
 }
 
-PhysObj* PhysicsComponent::getVolume() const
-{
-   return hitbox_;
-}
+WorldPhysicsComponent::WorldPhysicsComponent(PhysObj* volume) :
+   PhysicsComponent(volume)
+{ }
 
-void PhysicsComponent::setVolume(PhysObj* hitbox)
-{
-   hitbox_ = hitbox;
-}
-
-WorldPhysicsComponent::WorldPhysicsComponent(PhysObj* hitbox)
-{
-   this->setVolume(hitbox);
-}
-
-// VehiclePhysicsComponent::VehiclePhysicsComponent(PhysObj* hitbox)
+// VehiclePhysicsComponent::VehiclePhysicsComponent(PhysObj* volume)
 // {
-//    this->setVolume(hitbox);
+//    this->setVolume(volume);
 // }

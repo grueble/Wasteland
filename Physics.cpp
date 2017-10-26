@@ -7,7 +7,53 @@
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// - PhysObj Collision Functions
+// - Geometric Projection Functions
+//
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void normalize(vec2_t& v)
+{
+   // calculate magnitude
+   float mag = magnitude(v);
+
+   // normalize passed vector
+   v.x /= mag;
+   v.y /= mag; // or should I return a new vector?
+}
+
+float dot(const vec2_t& a, const vec2_t& b)
+{
+   return ( ( a.x * b.x ) + ( a.y * b.y ) );
+}
+
+// if magnitude == 1...
+float scalar_proj(const vec2_t& a, const vec2_t& b)
+{
+   /* could add a parameter bool b_is_normal,
+    * use to avoid expensive magnitude calculation... */
+
+   return dot(a, b) / magnitude(b);
+}
+
+vec2_t vector_proj(const vec2_t& a, const vec2_t& b) // project a onto b
+{
+   float dp = dot(a, b);
+
+   // if b is normal, len_b_sq == 1
+   float len_b_sq = ( b.x * b.x ) + ( b.y *b.y );
+
+   vec2_t projection = vec2_t( (dp / len_b_sq) * b.x, (dp / len_b_sq) * b.y);
+
+   return projection;
+}
+
+float magnitude(const vec2_t& v)
+{
+   return sqrt( ( v.x * v.x ) + ( v.y * v.y ) );
+}
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// - PhysEngine Collision Functions
 //
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 bool PhysEngine::AABBvsAABB(Manifold* m)
@@ -228,122 +274,4 @@ bool PhysEngine::AABBvsTriangle(Manifold* m)
    }
 
    return false;
-}
-
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// - Geometric Projection Functions
-//
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void normalize(vec2_t& v)
-{
-   // calculate magnitude
-   float mag = magnitude(v);
-
-   // normalize passed vector
-   v.x /= mag;
-   v.y /= mag; // or should I return a new vector?
-}
-
-float dot(const vec2_t& a, const vec2_t& b)
-{
-   return ( ( a.x * b.x ) + ( a.y * b.y ) );
-}
-
-// if magnitude == 1...
-float scalar_proj(const vec2_t& a, const vec2_t& b)
-{
-   /* could add a parameter bool b_is_normal,
-    * use to avoid expensive magnitude calculation... */
-
-   return dot(a, b) / magnitude(b);
-}
-
-vec2_t vector_proj(const vec2_t& a, const vec2_t& b) // project a onto b
-{
-   float dp = dot(a, b);
-
-   // if b is normal, len_b_sq == 1
-   float len_b_sq = ( b.x * b.x ) + ( b.y *b.y );
-
-   vec2_t projection = vec2_t( (dp / len_b_sq) * b.x, (dp / len_b_sq) * b.y);
-
-   return projection;
-}
-
-float magnitude(const vec2_t& v)
-{
-   return sqrt( ( v.x * v.x ) + ( v.y * v.y ) );
-}
-
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// - PhysObj Utility Functions
-//
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-std::vector<float> AABB::getVertices()
-{
-   std::vector<float> vertices = {
-      // position              // color           // uv coords
-      p.x - xw.x, p.y + yw.y,  0.0f, 0.0f, 0.0f,  0.0f, 0.0f,  // top-left
-      p.x + xw.x, p.y + yw.y,  0.0f, 0.0f, 0.0f,  1.0f, 0.0f,  // top-right
-      p.x + xw.x, p.y - yw.y,  0.0f, 0.0f, 0.0f,  1.0f, 1.0f,  // bottom-right
-      p.x - xw.x, p.y - yw.y,  0.0f, 0.0f, 0.0f,  0.0f, 1.0f   // bottom-left
-   };
-
-   return vertices;
-}
-
-std::vector<unsigned int> AABB::getIndices()
-{
-   std::vector<unsigned int> indices = {
-      0, 1, 2, // first triangle
-      2, 0, 3  // second triangle
-   };
-
-   return indices;
-}
-
-std::vector<float> Circle::getVertices()
-{
-   std::vector<float> vertices = {
-      // position        // color           // uv coords
-      p.x - r, p.y + r,  0.0f, 0.0f, 0.0f,  0.0f, 0.0f,  // top-left
-      p.x + r, p.y + r,  0.0f, 0.0f, 0.0f,  1.0f, 0.0f,  // top-right
-      p.x + r, p.y - r,  0.0f, 0.0f, 0.0f,  1.0f, 1.0f,  // bottom-right
-      p.x - r, p.y - r,  0.0f, 0.0f, 0.0f,  0.0f, 1.0f   // bottom-left
-   };
-
-   return vertices;
-}
-
-std::vector<unsigned int> Circle::getIndices()
-{
-   std::vector<unsigned int> indices = {
-      0, 1, 2, // first triangle
-      2, 0, 3  // second triangle
-   };
-
-   return indices;
-}
-
-std::vector<float> Triangle::getVertices()
-{
-   std::vector<float> vertices = {
-      // position       // color           // uv coords
-      p.x, p.y + yw.y,  0.0f, 0.0f, 0.0f,  0.0f, 0.0f,  // top-left
-      p.x, p.y,         0.0f, 0.0f, 0.0f,  0.0f, 1.0f,  // bottom-left
-      p.x + xw.x, p.y,  0.0f, 0.0f, 0.0f,  1.0f, 1.0f   // bottom-right
-   };
-
-   return vertices;
-}
-
-std::vector<unsigned int> Triangle::getIndices()
-{
-   std::vector<unsigned int> indices = {
-      0, 1, 2
-   };
-
-   return indices;
 }

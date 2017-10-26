@@ -110,14 +110,12 @@ struct PhysObj
    virtual Circle* asCircle() { return nullptr; }
    virtual Triangle* asTriangle() { return nullptr; }
 
-   virtual std::vector<float> getVertices() = 0;
-   virtual std::vector<unsigned int> getIndices() = 0;
-
    // returns half length of projection onto given axis
    virtual float projectOntoAxis(vec2_t axis) = 0;
 
    const PhysObj_e type;
    vec2_t p; // position, same as model matrix xform in SceneNode
+   // initialize p as a reference in order to modify it from the top level object
 };
 
 struct AABB : public PhysObj // axis-aligned bounding box
@@ -128,10 +126,7 @@ struct AABB : public PhysObj // axis-aligned bounding box
       yw(a_yw)
    { }
 
-   AABB_t* asAABB() { return this; }
-
-   std::vector<float> getVertices() override;
-   std::vector<unsigned int> getIndices() override;
+   AABB_t* asAABB() override { return this; }
 
    float projectOntoAxis(vec2_t axis) override {
       return scalar_proj(xw, axis) + scalar_proj(yw, axis);
@@ -149,9 +144,6 @@ struct Circle : public PhysObj
    { }
 
    Circle* asCircle() override { return this; }
-
-   std::vector<float> getVertices() override;
-   std::vector<unsigned int> getIndices() override;
 
    float projectOntoAxis(vec2_t axis) override {
       return r;
@@ -172,9 +164,6 @@ struct Triangle : public PhysObj // axis-aligned right triangle
    }
 
    Triangle* asTriangle() override { return this; }
-
-   std::vector<float> getVertices() override;
-   std::vector<unsigned int> getIndices() override;
 
    float projectOntoAxis(vec2_t axis) override {
       return scalar_proj(xw, axis) + scalar_proj(yw, axis);

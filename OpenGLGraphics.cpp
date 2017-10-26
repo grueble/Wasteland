@@ -134,42 +134,6 @@ void OpenGLRenderer::render(int mesh_index, glm::mat4 mvp)
    {
       glBindVertexArray(mesh.vao_);
 
-      // int count = 0;
-      // printf("# vertices: %i\n", mesh.vertices_.size());
-      // std::vector<float>::iterator v_it;
-      // for (v_it = mesh.vertices_.begin(); v_it != mesh.vertices_.end(); ++v_it)
-      // {
-      //    count++;
-      //    if (count % 7 == 1)
-      //    {
-      //       printf("{");
-      //    }
-      //    if (count % 7 == 1 || count % 7 == 2)
-      //    {
-      //       printf(" %f ", *v_it);
-      //    }
-      //    if (count % 7 == 2)
-      //    {
-      //       printf("}\n");
-      //    }
-      // }
-
-      // /*static const*/ float* g_vertices = &(mesh.vertices_[0]);
-
-      // printf("vbo: %i\n", mesh.vbo_);
-      // for (int i = 0; i < 28; i++)
-      // {
-         // printf("%f\n", *(g_vertices+i));
-      // }
-
-      // GLfloat vertices2[28];
-      // glGetBufferSubData(GL_ARRAY_BUFFER, 0, mesh.vertices_.size() * sizeof(*g_vertices), vertices2);
-      // for ( int i = 0; i < 4; i ++ ) {
-         // printf("point %i: %f, %f\n", i, vertices2[(i*7)], vertices2[(i*7)+1]);
-         // LOG_DEBUG << "point " << i << ": " << vertices2[ i * 3 + 0 ] << " / " << vertices2[ i * 3 + 1 ] << " / " << vertices2[ i * 3 + 2 ];
-      // }
-      // printf("\n");
-
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_2D, mesh.texture_);
       
@@ -182,38 +146,6 @@ void OpenGLRenderer::render(int mesh_index, glm::mat4 mvp)
       glUseProgram(0);
 
       glBindVertexArray(0);
-   }
-}
-
-void OpenGLRenderer::printMesh(int mesh_index)
-{
-   OpenGLMesh& mesh = meshes_.at(mesh_index);
-
-   int count = 0;
-
-   printf("# vertices: %i\n", mesh.vertices_.size());
-   std::vector<float>::iterator v_it;
-   for (v_it = mesh.vertices_.begin(); v_it != mesh.vertices_.end(); ++v_it)
-   {
-      count++;
-      if (count % 7 == 1)
-      {
-         printf("{");
-      }
-      if (count % 7 == 1 || count % 7 == 2)
-      {
-         printf(" %f ", *v_it);
-      }
-      if (count % 7 == 2)
-      {
-         printf("}\n");
-      }
-   }
-   printf("# indices: %i\n", mesh.indices_.size());
-   std::vector<unsigned int>::iterator i_it;
-   for (i_it = mesh.indices_.begin(); i_it != mesh.indices_.end(); ++i_it)
-   {
-      printf("%i\n", *i_it);
    }
 }
 

@@ -12,6 +12,11 @@ public:
    //       that has a non-virtual destructor results in undefined behavior
    virtual ~GraphicsComponent() {}
 
+   /* NOTE: Currently, the Renderer owns and manages all OpenGLMesh objects.
+    *       If this changes, and this class (or a derived class) comes to own
+    *       any resources, I will need to implement move semantics here
+    */  
+
    void update(Renderer_t& renderer, glm::mat4 mvp);
 
 private:

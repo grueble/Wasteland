@@ -16,8 +16,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "Physics.hpp"
-
 typedef struct OpenGLMesh Mesh_t;
 typedef struct OpenGLRenderer Renderer_t;
 
@@ -83,8 +81,6 @@ public:
                   std::vector<unsigned int> indices);
 
    void render(int mesh_index, glm::mat4 mvp);
-
-   void printMesh(int mesh_index);
 
 private: 
    GLuint loadShaders(const char* vert_fpath, const char* frag_fpath);
