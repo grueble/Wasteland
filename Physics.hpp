@@ -3,13 +3,14 @@
 
 #include <vector>
 
-// gravity const!!!
+// gravitational acceleration
+static const float _G = -0.05f; //-9.8f; // m/s^2
 
 typedef struct vec2_s vec2_t;
 typedef struct vec3_s vec3_t;
 typedef struct ray2_s ray2_t;
 typedef struct material_s material_t;
-typedef struct AABB AABB_t; // wtf whyyyyyyy???
+typedef struct AABB AABB_t; // ...
 
 // forward declaration of hitbox types
 struct PhysObj;
@@ -84,6 +85,34 @@ enum PhysObj_e
    // RECT,
    // LINE
 };
+
+struct Manifold
+{
+   Manifold() :
+      a(nullptr),
+      b(nullptr),
+      a_p(),
+      b_p(),
+      proj()
+   { }
+
+   Manifold(PhysObj* a_obj, PhysObj* b_obj, 
+            vec3_t a_pos, vec3_t b_pos) :
+      a(a_obj),
+      b(b_obj),
+      a_p(a_pos),
+      b_p(b_pos),
+      proj()
+   { }
+
+   PhysObj* a; // unowned pointer to a
+   PhysObj* b; // unowned pointer to b
+   vec3_t a_p; // position of a
+   vec3_t b_p; // position of b
+   vec2_t proj;
+   bool resolve = false;
+};
+
 const vec2_t X_AXIS = vec2_t(1.0f, 0.0f);
 const vec2_t Y_AXIS = vec2_t(0.0f, 1.0f);
 
@@ -94,6 +123,16 @@ float scalar_proj(const vec2_t& a, const vec2_t& b);
 vec2_t vector_proj(const vec2_t& a, const vec2_t& b);
 float magnitude(const vec2_t& v);
 
+// collision functions
+bool collide(Manifold& m);
+
+bool AABBvsAABB(Manifold& m);
+bool AABBvsCircle(Manifold& m);
+bool AABBvsTriangle(Manifold& m);
+// bool CirclevsCircle(Manifold* m);
+
+bool collide_hyp(Triangle& tri, vec3_t& tri_p, vec3_t& other_p);
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
 // - PhysObj & children
@@ -101,27 +140,26 @@ float magnitude(const vec2_t& v);
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 struct PhysObj
 {
-   PhysObj(PhysObj_e a_type, vec2_t position) :
-      type(a_type),
-      p(position)
+   PhysObj(PhysObj_e a_type) :
+      type(a_type)
    { }
 
    virtual AABB_t* asAABB() { return nullptr; }
    virtual Circle* asCircle() { return nullptr; }
    virtual Triangle* asTriangle() { return nullptr; }
 
+   const PhysObj_e getType() { return type; }
+
    // returns half length of projection onto given axis
    virtual float projectOntoAxis(vec2_t axis) = 0;
 
    const PhysObj_e type;
-   vec2_t p; // position, same as model matrix xform in SceneNode
-   // initialize p as a reference in order to modify it from the top level object
 };
 
 struct AABB : public PhysObj // axis-aligned bounding box
 {
-   AABB(vec2_t p, vec2_t a_xw, vec2_t a_yw) :
-      PhysObj(PhysObj_e::AABB, p),
+   AABB(vec2_t a_xw, vec2_t a_yw) :
+      PhysObj(PhysObj_e::AABB),
       xw(a_xw),
       yw(a_yw)
    { }
@@ -138,8 +176,8 @@ struct AABB : public PhysObj // axis-aligned bounding box
 
 struct Circle : public PhysObj
 {
-   Circle(vec2_t p, float radius) :
-      PhysObj(PhysObj_e::CIRCLE, p),
+   Circle(float radius) :
+      PhysObj(PhysObj_e::CIRCLE),
       r(radius)
    { }
 
@@ -154,8 +192,8 @@ struct Circle : public PhysObj
 
 struct Triangle : public PhysObj // axis-aligned right triangle
 {
-   Triangle(vec2_t p, vec2_t a_xw, vec2_t a_yw) :
-      PhysObj(PhysObj_e::TRI, p),
+   Triangle(vec2_t a_xw, vec2_t a_yw) :
+      PhysObj(PhysObj_e::TRI),
       xw(a_xw),
       yw(a_yw)
    { 
@@ -173,25 +211,9 @@ struct Triangle : public PhysObj // axis-aligned right triangle
    vec2_t xw, yw, third_axis;
 };
 
-struct Manifold
-{
-   PhysObj* a;
-   PhysObj* b;
-   vec2_t proj;
-   // float penetration;
-   // glm::vec2 normal; 
-};
-
-
-class PhysEngine
-{
-public:
-
-private:
-   bool AABBvsAABB(Manifold* m);
-   bool AABBvsCircle(Manifold* m);
-   bool CirclevsCircle(Manifold* m);
-   bool AABBvsTriangle(Manifold* m);
-};
+bool AABBvsAABB(Manifold* m);
+bool AABBvsCircle(Manifold* m);
+bool AABBvsTriangle(Manifold* m);
+// bool CirclevsCircle(Manifold* m);
 
 #endif

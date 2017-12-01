@@ -9,5 +9,9 @@ uniform sampler2D ourTexture;
 
 void main()
 {
+   if(texture(ourTexture, TexCoord).a != 1.0f) {
+      discard;
+   }
+
    gl_FragColor = texture(ourTexture, TexCoord);
 }

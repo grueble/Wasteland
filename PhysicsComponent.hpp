@@ -1,20 +1,25 @@
 #ifndef _PHYSICS_COMPONENT_HPP_
 #define _PHYSICS_COMPONENT_HPP_
 
-#include <memory>
-
 #include "Physics.hpp"
 
+// forward declarations
+class Entity;
+class Node;
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// - PhysicsComponent
+//
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class PhysicsComponent
 {
 public:
+   PhysicsComponent();
+
    PhysicsComponent(PhysObj* volume);
 
    ~PhysicsComponent();
-
-   // copy constructor and copy-assignment operator
-   WorldPhysicsComponent( const PhysicsComponent & other ) = delete; // not copy constructable
-   PhysicsComponent & operator=( const PhysicsComponent & other ) = delete; // not copy-assignable
 
    // move constructor and move-assignment operator
    PhysicsComponent( PhysicsComponent && other );
@@ -22,24 +27,43 @@ public:
 
    PhysObj& getVolume();
 
-   void update();//Node& world);
+   virtual void update(Entity& obj, Node& world);
 
 private:
-   PhysicsComponent(); // disable default constructor
-
    PhysObj* volume_;
+
+   // copy constructor and copy-assignment operator
+   PhysicsComponent( const PhysicsComponent & other ) = delete; // not copy constructable
+   PhysicsComponent & operator=( const PhysicsComponent & other ) = delete; // not copy-assignable
 };
 
-class WorldPhysicsComponent : public PhysicsComponent
-{
-public:
-   WorldPhysicsComponent(PhysObj* volume);
-};
-
-// class VehiclePhysicsComponent : public PhysicsComponent
+// class WorldPhysicsComponent : public PhysicsComponent
 // {
 // public:
-//    VehiclePhysicsComponent(PhysObj* volume);
+//    WorldPhysicsComponent(PhysObj* volume);
 // };
 
+class ActorPhysicsComponent : public PhysicsComponent
+{
+public:
+   ActorPhysicsComponent();
+
+   ActorPhysicsComponent(PhysObj* volume);
+
+   // move constructor and move-assignment operator
+   ActorPhysicsComponent( ActorPhysicsComponent && other );
+   ActorPhysicsComponent & operator=( ActorPhysicsComponent && other );
+
+   void update(Entity& obj, Node& world) override;
+
+private:
+   // copy constructor and copy-assignment operator
+   ActorPhysicsComponent( const ActorPhysicsComponent & other ) = delete; // not copy constructable
+   ActorPhysicsComponent & operator=( const ActorPhysicsComponent & other ) = delete; // not copy-assignable
+};
+
 #endif
+
+/* relevant:
+ * https://stackoverflow.com/questions/461203/when-to-use-virtual-destructors
+ */

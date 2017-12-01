@@ -24,15 +24,16 @@ LDFLAGS=$(LIB_PATH) -Wl,-subsystem,windows -lSDL2main -lSDL2 -lSDL2_image -lglu3
 TARGET=main.exe
 BUILD_DIR=build
 OBJS=$(BUILD_DIR)/Physics.o $(BUILD_DIR)/OpenGLGraphics.o \
-	  $(BUILD_DIR)/PhysicsComponent.o $(BUILD_DIR)/GraphicsComponent.o \
-     $(BUILD_DIR)/SceneGraph.o $(BUILD_DIR)/SceneManager.o \
+	  $(BUILD_DIR)/GameObjs.o \
+	  $(BUILD_DIR)/InputComponent.o $(BUILD_DIR)/PhysicsComponent.o $(BUILD_DIR)/GraphicsComponent.o \
+	  $(BUILD_DIR)/SceneManager.o \
      $(BUILD_DIR)/Wasteland.o
 ADD_OBJS=GL/gl3w.o
 
 all: $(TARGET)
 
 $(TARGET): $(OBJS) $(ADD_OBJS)
-	$(CXX) -o $@ $^ $(STATIC_LIBS) $(LDFLAGS)
+	$(CXX) -g -o $@ $^ $(STATIC_LIBS) $(LDFLAGS)
 
 $(BUILD_DIR)/%.o: %.cpp
 	$(CXX) -c $(CXXFLAGS) $< -o $@

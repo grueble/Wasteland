@@ -5,8 +5,8 @@
 
 #define PROGRAM_NAME "Wasteland"
 
-static const int SCREEN_WIDTH = 1024;
-static const int SCREEN_HEIGHT = 640;
+static const int SCREEN_WIDTH = 1280;
+static const int SCREEN_HEIGHT = 800;
 
 typedef std::chrono::duration<double> dsec;
 
@@ -41,7 +41,8 @@ struct eye_point
 
 bool init();
 void run();
-void handleKeyDown(const SDL_Event& e, glm::mat4& view, eye_point& eye);
+void handleKeyDown(const SDL_Event& e, glm::mat4& view, eye_point& eye, Entity& plyr);
+void handleKeyUp(const SDL_Event& e, Entity& plyr);
 void close();
 
 #undef main 
@@ -148,17 +149,7 @@ void run()
    SceneManager scene_mngr(renderer);
    Node& world_root = scene_mngr.getWorld();
 
-   // PhysicsComponent* p_comp = new  
-   // int player_mesh = renderer.createMesh("./assets/player.png", 0)
-
-   // Node player
-
-   // AABB_t hitbox((vec2_t){0.0f, 0.0f}, (vec2_t){5.0f, 0.0f}, (vec2_t){0.0f, 5.0f});
-
-   // int mesh_index = renderer.createMesh("./assets/dune_glitch.png", 
-   //                                      0, 
-   //                                      hitbox.getVertices(), 
-   //                                      hitbox.getIndices());
+   std::unique_ptr<Entity> player = scene_mngr.getPlayer();
 
    dsec t(0.0);
    dsec dt(1.0/60.0);
@@ -167,8 +158,8 @@ void run()
    dsec accumulator(0.0); 
 
    eye_point eye = eye_point(
-      vec3_t(0.0f, 0.0f, 20.0f), // camera
-      vec3_t(0.0f, 0.0f, 0.0f),  // look at
+      vec3_t(2.5f, 8.0f, 20.0f), // camera
+      vec3_t(5.0f, 10.0f, 0.0f),  // look at
       vec3_t(0.0f, 1.0f, 0.0f)   // up dir
    );
 
@@ -203,7 +194,12 @@ void run()
             }
             case SDL_KEYDOWN :
             {
-               handleKeyDown(e, view, eye);
+               handleKeyDown(e, view, eye, *player);
+               break;
+            }
+            case SDL_KEYUP :
+            {
+               handleKeyUp(e, *player);
                break;
             }
          }
@@ -214,6 +210,10 @@ void run()
       current_time = new_time;
       accumulator += frame_time;
 
+
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      //ok, so I've narrowed the issue down to an integration issue
+      // currently, a projection is not enough to move the object out of the shape
       while (accumulator >= dt)
       {
          // std::vector<ActorNode*>::iterator it;
@@ -222,23 +222,45 @@ void run()
          //    (*it)->integrate(t, dt);
          //    (*it)->update();
          // }
+         player->update(world_root, renderer, view);
          accumulator -= dt;
          t += dt;
       }
 
-      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-      // renderer.render(mesh_index, projection_ * view * glm::mat4(1.0));
-      world_root.update(renderer, view);
+      world_root.update(world_root, renderer, view);
+      // player->update(world_root, renderer, view);
       SDL_GL_SwapWindow(window); // swap buffers; finalized render frame
    }
 
    renderer.close();
 }
 
-void handleKeyDown(const SDL_Event& e, glm::mat4& view, eye_point& eye)
+void handleKeyDown(const SDL_Event& e, glm::mat4& view, eye_point& eye, Entity& plyr)
 {
    switch(e.key.keysym.sym)
    {
+      case 'w' :
+      {
+         if (plyr.v.y <= 0.0f)
+         {
+            plyr.v.y = 1.0f;
+         }
+         if (plyr.v.y < 1.0f) 
+         {
+            plyr.v.y += 0.25f;
+         }
+         break;
+      }
+      case 'a' :
+      {
+         plyr.v.x = -0.25f;
+         break;
+      }
+      case 'd' :
+      {
+         plyr.v.x = 0.25f;
+         break;
+      }
       case SDLK_LEFT :
       {
          // glm::vec4 camera_pt(eye.camera.x, eye.camera.y, eye.camera.z, 1.0f);
@@ -286,6 +308,31 @@ void handleKeyDown(const SDL_Event& e, glm::mat4& view, eye_point& eye)
             glm::vec3(eye.look_at.x, eye.look_at.y, eye.look_at.z),
             glm::vec3(eye.up_dir.x, eye.up_dir.y, eye.up_dir.z)
          );
+         break;
+      }
+      default :
+      {
+         break;
+      }
+   }
+}
+
+void handleKeyUp(const SDL_Event& e, Entity& plyr)
+{
+   switch (e.key.keysym.sym)
+   {
+      case 'a' :
+      {
+         plyr.v.x = 0.0f;
+         break;
+      }
+      case 'd' :
+      {
+         plyr.v.x = 0.0f;
+         break;
+      }
+      default :
+      {
          break;
       }
    }

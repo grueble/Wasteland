@@ -5,6 +5,11 @@
  * place to handle hardware specfic #defines or #includes... */
 #include "OpenGLGraphics.hpp"
 
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// - GraphicsComponent
+//
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class GraphicsComponent
 {
 public:
@@ -15,7 +20,9 @@ public:
    /* NOTE: Currently, the Renderer owns and manages all OpenGLMesh objects.
     *       If this changes, and this class (or a derived class) comes to own
     *       any resources, I will need to implement move semantics here
-    */  
+    */
+
+   // void printIndex();   
 
    void update(Renderer_t& renderer, glm::mat4 mvp);
 
@@ -27,6 +34,17 @@ class WorldGraphicsComponent : public GraphicsComponent
 {
 public:
    WorldGraphicsComponent(int mesh_index);
+
+private:
+   void draw(Renderer_t& renderer, glm::mat4 mvp) override;
+
+   int mesh_index_;
+};
+
+class ActorGraphicsComponent : public GraphicsComponent
+{
+public:
+   ActorGraphicsComponent(int mesh_index);
 
 private:
    void draw(Renderer_t& renderer, glm::mat4 mvp) override;

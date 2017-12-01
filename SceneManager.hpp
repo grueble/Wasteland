@@ -1,8 +1,7 @@
 #ifndef _SCENE_MANAGER_HPP_
 #define _SCENE_MANAGER_HPP_
 
-#include "SceneGraph.hpp"
-#include <vector>
+#include "GameObjs.hpp"
 
 class SceneManager
 {
@@ -10,6 +9,8 @@ public:
    SceneManager(Renderer_t& renderer);
 
    Node& getWorld();
+
+   std::unique_ptr<Entity> getPlayer();
 
 private:
    std::unique_ptr<Node> createPlatformAABB(vec2_t xw, 
@@ -23,6 +24,7 @@ private:
 
    std::unique_ptr<Node> createPlatformTri(vec2_t xw, 
                                            vec2_t yw, 
+                                           // Quadrant_e q,
                                            const char* fpath, 
                                            vec3_t position);
 

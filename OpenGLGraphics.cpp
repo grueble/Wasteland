@@ -73,8 +73,9 @@ int OpenGLRenderer::createMesh(const char* asset_fpath, GLuint shader_index,
       printf("Unable to load image! SDL_image Error: %s\n", IMG_GetError());
    }
    else {
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, loaded_img->w, loaded_img->h,
-                   0, GL_RGB, GL_UNSIGNED_BYTE, loaded_img->pixels);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, loaded_img->w, loaded_img->h,
+                   0, GL_BGRA, GL_UNSIGNED_BYTE, loaded_img->pixels);
+      // NOTE: GL_BGRA is currently distorting colors
       printOpenGLError(); // glGetError();
       glGenerateMipmap(GL_TEXTURE_2D);
       SDL_FreeSurface(loaded_img);
@@ -89,28 +90,23 @@ int OpenGLRenderer::createMesh(const char* asset_fpath, GLuint shader_index,
    new_mesh.vertices_ = vertices; // copy construct
    new_mesh.indices_ = indices;
 
-   // it was the 'static' that was fucking me up... :/
    const float* g_vertices = &(new_mesh.vertices_[0]);
    
    const unsigned int* g_indices = &(new_mesh.indices_[0]);
 
-   // GLfloat result;
-
    glBindBuffer(GL_ARRAY_BUFFER, new_mesh.vbo_);
-   // // printf("vbo: %i\n", new_mesh.vbo_);
-   glBufferData(GL_ARRAY_BUFFER, new_mesh.vertices_.size() * sizeof(*g_vertices), g_vertices, GL_STATIC_DRAW);
-   // // my bind is fucking up wtf
+   glBufferData(GL_ARRAY_BUFFER, 
+                new_mesh.vertices_.size() * sizeof(*g_vertices), 
+                g_vertices, 
+                GL_STATIC_DRAW);
    
-   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (void*)0);
+   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0);
    glEnableVertexAttribArray(0); // position attrib.
-
-   // // glGetVertexAttribfv(0, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &result);
-   // // printf("%f\n", result);
    
-   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
+   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
    glEnableVertexAttribArray(1); // color attrib.
    
-   glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));
+   glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
    glEnableVertexAttribArray(2); // uv coord. attrib.
 
    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, new_mesh.ebo_);
@@ -120,8 +116,6 @@ int OpenGLRenderer::createMesh(const char* asset_fpath, GLuint shader_index,
    glBindVertexArray(0);
 
    printOpenGLError();
-
-   // printMesh(meshes_.size() - 1);
 
    return meshes_.size() - 1; // invariant: no deletion from meshes_
 }
