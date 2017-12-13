@@ -53,15 +53,15 @@ PhysObj& PhysicsComponent::getVolume()
    return *volume_;
 }
 
-void PhysicsComponent::update(Entity& obj, Node& world)
-{
-   
-}
+// use this update for bounding nodes??
+void PhysicsComponent::update(Entity& obj, std::vector<BoundingNode>& world)
+{ }
 
-// WorldPhysicsComponent::WorldPhysicsComponent(PhysObj* volume) :
-//    PhysicsComponent(volume)
-// { }
-
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// - ActorPhysicsComponent
+//
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ActorPhysicsComponent::ActorPhysicsComponent() :
    PhysicsComponent()
 { }
@@ -86,7 +86,7 @@ ActorPhysicsComponent& ActorPhysicsComponent::operator=( ActorPhysicsComponent &
    return *this;
 }
 
-void ActorPhysicsComponent::update(Entity& obj, Node& world)
+void ActorPhysicsComponent::update(Entity& obj, std::vector<BoundingNode>& world)
 {
    // add gravity
    if (obj.v.y > -1.0f) // terminal velocity cap
@@ -98,17 +98,25 @@ void ActorPhysicsComponent::update(Entity& obj, Node& world)
    obj.p.x += obj.v.x;
    obj.p.y += obj.v.y;
 
-   Manifold m;
-   m.a = &(this->getVolume());
-   m.a_p = obj.p;
-
-   world.resolveCollision(m);
-
-   if (m.resolve)
+   std::vector<BoundingNode>::iterator it;
+   for (it = world.begin(); it != world.end(); ++it)
    {
-      obj.v.y = 0.0f;
-   }
+      std::vector<Manifold> collisions = it->resolveCollision(this->getVolume(), obj.p);
 
-   obj.p.x += m.proj.x;
-   obj.p.y += m.proj.y;
+      std::vector<Manifold>::iterator collide_it;
+      for (collide_it = collisions.begin(); collide_it != collisions.end(); ++collide_it)
+      {
+         if (collide_it->resolve)
+         {
+            obj.v.y = 0.0f;
+            obj.p.x += collide_it->proj.x;
+            obj.p.y += collide_it->proj.y;
+         }
+      }
+   }
+   
+   // keep an array of collisions for max # collisions/colliding objects, array of bool? array of manifolds?
+   // --> choose the right data to use
 }
+
+

@@ -84,6 +84,8 @@ bool collide(Manifold& m)
       }
    }
 
+   m.resolve = res;
+
    return res;
 }
 

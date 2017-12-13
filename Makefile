@@ -33,7 +33,7 @@ ADD_OBJS=GL/gl3w.o
 all: $(TARGET)
 
 $(TARGET): $(OBJS) $(ADD_OBJS)
-	$(CXX) -g -o $@ $^ $(STATIC_LIBS) $(LDFLAGS)
+	$(CXX) -g -ggdb3 -o $@ $^ $(STATIC_LIBS) $(LDFLAGS)
 
 $(BUILD_DIR)/%.o: %.cpp
 	$(CXX) -c $(CXXFLAGS) $< -o $@

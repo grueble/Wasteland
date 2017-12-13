@@ -8,6 +8,8 @@ class Entity;
 //
 // - InputComponent
 //
+// --> so this needs an event queue, which will allow me to build AI
+//
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class InputComponent 
 {

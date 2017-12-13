@@ -3,38 +3,49 @@
 
 #include "GameObjs.hpp"
 
+// might need a Scene here... so that i can thread
+
 class SceneManager
 {
 public:
-   SceneManager(Renderer_t& renderer);
+   SceneManager(Renderer_t& renderer, SDL_Window* window, SDL_GLContext& gl_context);
 
-   Node& getWorld();
+   std::vector<BoundingNode>& getWorld();
 
-   std::unique_ptr<Entity> getPlayer();
+   Entity& getPlayer();
+
+   void loadScene();
 
 private:
-   std::unique_ptr<Node> createPlatformAABB(vec2_t xw, 
-                                            vec2_t yw, 
-                                            const char* fpath, 
-                                            vec3_t position);
+   void createPlatformAABB(vec3_t position,
+                           vec2_t xw, 
+                           vec2_t yw, 
+                           int texture_index, 
+                           BoundingNode* parent = nullptr);
 
-   std::unique_ptr<Node> createPlatformCircle(float r, 
-                                              const char* fpath, 
-                                              vec3_t position);
+   void createPlatformCircle(vec3_t position,
+                             float r, 
+                             int texture_index,
+                             BoundingNode* parent = nullptr);
 
-   std::unique_ptr<Node> createPlatformTri(vec2_t xw, 
-                                           vec2_t yw, 
-                                           // Quadrant_e q,
-                                           const char* fpath, 
-                                           vec3_t position);
+   void createPlatformTri(vec3_t position,
+                          vec2_t xw, 
+                          vec2_t yw, 
+                          int texture_index,
+                          BoundingNode* parent = nullptr);
 
-   std::vector<float> getVertices(PhysObj_e type, PhysObj& volume);
-
-   std::vector<unsigned int> getIndices(PhysObj_e type);
+   void loadDemoTextures();
+   void loadDemoObjects();
 
    Renderer_t& renderer_;
+   SDL_Window* window_;
+   SDL_GLContext& gl_context_;
 
-   Node scene_;
+   // may just want a root node here, and a vector of projectiles, NPCs, etc.
+   // check out "swap and pop" for the unloads
+   std::vector<BoundingNode> scene_;
+
+   Entity player_;
 };
 
 #endif

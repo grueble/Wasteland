@@ -5,8 +5,8 @@
 
 #define PROGRAM_NAME "Wasteland"
 
-static const int SCREEN_WIDTH = 1280;
-static const int SCREEN_HEIGHT = 800;
+static const int SCREEN_WIDTH = 1400;
+static const int SCREEN_HEIGHT = 875;
 
 typedef std::chrono::duration<double> dsec;
 
@@ -40,7 +40,7 @@ struct eye_point
 };
 
 bool init();
-void run();
+void run(Renderer_t& renderer);
 void handleKeyDown(const SDL_Event& e, glm::mat4& view, eye_point& eye, Entity& plyr);
 void handleKeyUp(const SDL_Event& e, Entity& plyr);
 void close();
@@ -49,7 +49,12 @@ void close();
 int main(int argc, char* argv[])
 {
 	if (init()) {
-	  run();
+      Renderer_t renderer;
+      renderer.init();
+
+      run(renderer);
+
+      renderer.close();
    }
 	close();
 	return 0;
@@ -132,7 +137,7 @@ bool init()
    return success;
 }
 
-void run()
+void run(Renderer_t& renderer)
 {
 	// main loop flag
    bool quit = false;
@@ -143,13 +148,11 @@ void run()
    glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
    glClearDepth(1.0); // this is default value (=1)
 
-   Renderer_t renderer;
-   renderer.init();
+   SceneManager scene_mngr(renderer, window, glContext);
+   scene_mngr.loadScene();
 
-   SceneManager scene_mngr(renderer);
-   Node& world_root = scene_mngr.getWorld();
-
-   std::unique_ptr<Entity> player = scene_mngr.getPlayer();
+   std::vector<BoundingNode>& world = scene_mngr.getWorld();
+   Entity& player = scene_mngr.getPlayer();
 
    dsec t(0.0);
    dsec dt(1.0/60.0);
@@ -158,8 +161,8 @@ void run()
    dsec accumulator(0.0); 
 
    eye_point eye = eye_point(
-      vec3_t(2.5f, 8.0f, 20.0f), // camera
-      vec3_t(5.0f, 10.0f, 0.0f),  // look at
+      vec3_t(2.5f, 16.0f, 20.0f), // camera
+      vec3_t(5.0f, 18.0f, 0.0f),  // look at
       vec3_t(0.0f, 1.0f, 0.0f)   // up dir
    );
 
@@ -192,14 +195,15 @@ void run()
                }
                break;
             }
+            // during these routines, add events to an event queue for the player. feed to InputComponent
             case SDL_KEYDOWN :
             {
-               handleKeyDown(e, view, eye, *player);
+               handleKeyDown(e, view, eye, player);
                break;
             }
             case SDL_KEYUP :
             {
-               handleKeyUp(e, *player);
+               handleKeyUp(e, player);
                break;
             }
          }
@@ -210,10 +214,7 @@ void run()
       current_time = new_time;
       accumulator += frame_time;
 
-
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-      //ok, so I've narrowed the issue down to an integration issue
-      // currently, a projection is not enough to move the object out of the shape
       while (accumulator >= dt)
       {
          // std::vector<ActorNode*>::iterator it;
@@ -222,17 +223,21 @@ void run()
          //    (*it)->integrate(t, dt);
          //    (*it)->update();
          // }
-         player->update(world_root, renderer, view);
+         player.update(world, renderer, view);
          accumulator -= dt;
          t += dt;
       }
 
-      world_root.update(world_root, renderer, view);
+      // ** instead of rendering in update, preload the vertices
+      // this could be a top-level bounding node
+      std::vector<BoundingNode>::iterator it;
+      for (it = world.begin(); it != world.end(); ++it)
+      {
+         it->update(world, renderer, view);
+      }
       // player->update(world_root, renderer, view);
       SDL_GL_SwapWindow(window); // swap buffers; finalized render frame
    }
-
-   renderer.close();
 }
 
 void handleKeyDown(const SDL_Event& e, glm::mat4& view, eye_point& eye, Entity& plyr)
@@ -254,6 +259,11 @@ void handleKeyDown(const SDL_Event& e, glm::mat4& view, eye_point& eye, Entity& 
       case 'a' :
       {
          plyr.v.x = -0.25f;
+         break;
+      }
+      case 's' :
+      {
+         // crouch animation
          break;
       }
       case 'd' :

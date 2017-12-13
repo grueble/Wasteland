@@ -60,7 +60,7 @@ Entity& Entity::operator=( Entity&& other )
    return *this;
 }
 
-void Entity::update(Node& world, Renderer_t& renderer, glm::mat4 view)
+void Entity::update(std::vector<BoundingNode>& world, Renderer_t& renderer, glm::mat4 view)
 {
    if (input_) {
       input_->update(*this);
@@ -78,133 +78,132 @@ void Entity::update(Node& world, Renderer_t& renderer, glm::mat4 view)
    }
 }
 
-void Entity::resolveCollision(Manifold& m)
+std::vector<Manifold> Entity::resolveCollision(PhysObj& other_volume, vec3_t& other_pos)
 {
+   std::vector<Manifold> collisions;
+
    if (physics_)
    {
-      m.b = &(physics_->getVolume());
-      m.b_p = p;
+      // create a Manifold for this collision
+      Manifold m(&other_volume, &(physics_->getVolume()), other_pos, p);
    
       if (collide(m))
       {
-         m.resolve = true;
+         collisions.push_back(m);
       }
    }
+
+   return collisions;
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// - Node
+// - BoundingNode
 //
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Node::Node() :
-   Entity(),
-   parent_(nullptr),
-   local_xform_(glm::mat4(1.0))
+BoundingNode::BoundingNode(vec3_t position, 
+                           float width, float height) :
+   Entity(position, 
+          nullptr, 
+          std::make_unique<PhysicsComponent>(
+            new AABB_t((vec2_t){ width, 0.0f }, (vec2_t){ 0.0f, height })), 
+          nullptr)
 { }
 
-Node::Node(vec3_t position,
-           std::unique_ptr<PhysicsComponent> physics,
-           glm::mat4 local_xform) :
-   Entity(position, nullptr, std::move(physics), nullptr),
-   parent_(nullptr),
-   local_xform_(local_xform)
-{ }
-
-Node::Node(vec3_t position,
-           std::unique_ptr<GraphicsComponent> graphics,
-           glm::mat4 local_xform) :
-   Entity(position, nullptr, nullptr, std::move(graphics)),
-   parent_(nullptr),
-   local_xform_(local_xform)
-{ }
-
-Node::Node(vec3_t position,
-           std::unique_ptr<PhysicsComponent> physics,
-           std::unique_ptr<GraphicsComponent> graphics,
-           glm::mat4 local_xform) :
-   Entity(position, nullptr, std::move(physics), std::move(graphics)),
-   parent_(nullptr),
-   local_xform_(local_xform)
-{ }
-
-Node::Node(vec3_t position,
-           std::unique_ptr<InputComponent> input,
-           std::unique_ptr<PhysicsComponent> physics,
-           std::unique_ptr<GraphicsComponent> graphics,
-           glm::mat4 local_xform) :
-   Entity(position, std::move(input), std::move(physics), std::move(graphics)),
-   parent_(nullptr),
-   local_xform_(local_xform)
-{ }
-
-Node::Node( Node&& other )
+BoundingNode::BoundingNode( BoundingNode && other )
 {
    *this = std::move(other);
 }
 
-Node& Node::operator=( Node&& other )
+BoundingNode & BoundingNode::operator=( BoundingNode && other )
 {
    if (this != &other)
    {
       Entity::operator=( std::move(other) );
 
       // pilfer other's resources
-      parent_ = other.parent_;
-      local_xform_ = other.local_xform_;
       children_ = std::move(other.children_);
    }
    
    return *this;
 }
 
-void Node::addChild(std::unique_ptr<Node> node)
+void BoundingNode::update(std::vector<BoundingNode>& world, Renderer_t& renderer, glm::mat4 view)
 {
-   children_.push_back(std::move(node)); // equivalent to emplace_back?
-   children_.back()->parent_ = this;
-}
-
-
-void Node::update(Node& world, Renderer_t& renderer, glm::mat4 view)
-{
-   if (parent_) {
-      // this->world_xform_ = parent_->world_xform_ * local_xform_;
-   }
-   else { // root node
-      // this->world_xform_ = local_xform_;
-   }
-
    Entity::update(world, renderer, view);
 
-   std::vector<std::unique_ptr<Node> >::iterator it;
+   std::vector<std::unique_ptr<Entity> >::iterator it;
    for (it = children_.begin(); it != children_.end(); ++it)
    {
       (*it)->update(world, renderer, view);
    }
 }
 
-void Node::resolveCollision(Manifold& m)
+std::vector<Manifold> BoundingNode::resolveCollision(PhysObj& other_volume, vec3_t& other_pos)
 {
-   if (physics_)
-   {
-      m.b = &(physics_->getVolume());
-      m.b_p = p;
+   // no need to check for physics_, BoundingNodes must be constructed with a PhysicsComponent
 
-      // if an obj collides with this Node, project that object out of the collision
-      if (collide(m))
-      {
-         m.resolve = true;
-      }
-   }
-   else 
+   std::vector<Manifold> collisions;
+
+   // create a Manifold for this collision
+   Manifold m(&other_volume, &(physics_->getVolume()), other_pos, p);
+
+   if (collide(m)) 
    {
-      std::vector<std::unique_ptr<Node> >::iterator it;
+      // on a collision with the BB, detect and store collisions for all children 
+      std::vector<std::unique_ptr<Entity> >::iterator it;
       for (it = children_.begin(); it != children_.end(); ++it)
       {
-         (*it)->resolveCollision(m);
+         std::vector<Manifold> child_collisions = (*it)->resolveCollision(other_volume, other_pos);
+
+         if (child_collisions.size() > 0)
+         {
+            std::move(child_collisions.begin(), child_collisions.end(), std::back_inserter(collisions));
+         }
       }
    }
+
+   return collisions;
 }
+
+void BoundingNode::addChild(std::unique_ptr<Entity> child)
+{
+   children_.push_back(std::move(child));
+}
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// - SceneNode
+//
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// SceneNode::SceneNode(vec3_t position,
+//                      std::unique_ptr<InputComponent> input, 
+//                      std::unique_ptr<GraphicsComponent> graphics, 
+//                      glm::mat4 local_xform) :
+//    Entity(
+//       position, std::move(input), nullptr, std::move(graphics)),
+//    local_xform_(local_xform)
+// {
+
+// }
+
+// void SceneNode::update(std::vector<Entity>& world, Renderer_t& renderer, glm::mat4 view)
+// {
+//    if (parent_) {
+//       this->world_xform_ = parent_->world_xform_ * local_xform_;
+//    }
+//    else { // root node
+//       this->world_xform_ = local_xform_;
+//    }
+
+//    Entity::update(world, renderer, view);
+// }
+
+// void SceneNode::addChild(std::unique_ptr<Entity> child)
+// {
+//    children_.push_back(std::move(child));
+//    children_.back()->parent_ = this;
+// }
 
 /* relevant:
  * https://stackoverflow.com/questions/17118256/implementing-move-constructor-by-calling-move-assignment-operator

@@ -13,43 +13,25 @@
 class GraphicsComponent
 {
 public:
-   // NOTE: Deleting a derived class object using a pointer to a base class 
-   //       that has a non-virtual destructor results in undefined behavior
-   virtual ~GraphicsComponent() {}
+   GraphicsComponent(Renderer_t& renderer, 
+                     int shader_index,
+                     int texture_index, 
+                     std::vector<float> vertices, 
+                     std::vector<unsigned int> indices);
 
-   /* NOTE: Currently, the Renderer owns and manages all OpenGLMesh objects.
-    *       If this changes, and this class (or a derived class) comes to own
-    *       any resources, I will need to implement move semantics here
-    */
+   ~GraphicsComponent();
 
-   // void printIndex();   
+   GraphicsComponent( GraphicsComponent && other );
+   GraphicsComponent & operator=( GraphicsComponent && other );
 
    void update(Renderer_t& renderer, glm::mat4 mvp);
 
 private:
-   virtual void draw(Renderer_t& renderer, glm::mat4 mvp) = 0;
-};
+   Mesh_t mesh_;
+   int texture_index_;
 
-class WorldGraphicsComponent : public GraphicsComponent
-{
-public:
-   WorldGraphicsComponent(int mesh_index);
-
-private:
-   void draw(Renderer_t& renderer, glm::mat4 mvp) override;
-
-   int mesh_index_;
-};
-
-class ActorGraphicsComponent : public GraphicsComponent
-{
-public:
-   ActorGraphicsComponent(int mesh_index);
-
-private:
-   void draw(Renderer_t& renderer, glm::mat4 mvp) override;
-
-   int mesh_index_;
+   GraphicsComponent( const GraphicsComponent & other ) = delete;
+   GraphicsComponent & operator=( const GraphicsComponent & other ) = delete;
 };
 
 #endif

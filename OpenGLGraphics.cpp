@@ -23,14 +23,14 @@ int printOglError(char *file, int line)
 // - OpenGLRenderer
 //
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-OpenGLRenderer::init()
+void OpenGLRenderer::init()
 {
    shaders_.push_back(loadShaders("shaders/texture.vert", "shaders/texture.frag"));
    // textures_.push_back(glGetUniformLocation(shaders_.at(0), "ourTexture")); // possible vector of texture IDs
    // NOTE: texture ID's may want to be associated with the Mesh
 }
 
-OpenGLRenderer::close()
+void OpenGLRenderer::close()
 {
    std::vector<GLuint>::iterator shader_it;
    for (shader_it = shaders_.begin(); shader_it != shaders_.end(); ++shader_it)
@@ -38,31 +38,66 @@ OpenGLRenderer::close()
       glDeleteProgram(*shader_it);
    }
 
-   std::vector<OpenGLMesh>::iterator mesh_it;
-   for (mesh_it = meshes_.begin(); mesh_it != meshes_.end(); ++mesh_it)
+   std::vector<GLuint>::iterator texture_it;
+   for (texture_it = textures_.begin(); texture_it != textures_.end(); ++texture_it)
    {
-      glDeleteBuffers(1, &(mesh_it->vbo_));
-      glDeleteBuffers(1, &(mesh_it->ebo_));
-      glDeleteTextures(1, &(mesh_it->texture_));
-      glDeleteVertexArrays(1, &(mesh_it->vao_));
+      glDeleteTextures(1, &(*texture_it));
    }
 }
 
-int OpenGLRenderer::createMesh(const char* asset_fpath, GLuint shader_index, 
-                               std::vector<float> vertices, std::vector<unsigned int> indices)
+void OpenGLRenderer::attachMesh(OpenGLMesh& mesh, GLuint shader_index, 
+                                std::vector<float> vertices, std::vector<unsigned int> indices)
 {
-   meshes_.push_back(OpenGLMesh());
-   OpenGLMesh& new_mesh = meshes_.back();
+   glGenVertexArrays(1, &mesh.vao_);
+   glBindVertexArray(mesh.vao_);
 
-   glGenVertexArrays(1, &new_mesh.vao_);
-   glBindVertexArray(new_mesh.vao_);
+   glGenBuffers(1, &mesh.vbo_);
+   glGenBuffers(1, &mesh.ebo_);
 
-   glGenBuffers(1, &new_mesh.vbo_);
-   glGenBuffers(1, &new_mesh.ebo_);
-   // printf("vbo: %i\n", new_mesh.vbo_);
-   glGenTextures(1, &new_mesh.texture_);
+   mesh.shader_id_ = shaders_.at(shader_index);
+   mesh.mvp_id_ = glGetUniformLocation(mesh.shader_id_, "MVP");
+   // mesh.texture_id_ = glGetUniformLocation(mesh.shader_id_, "ourTexture");
 
-   glBindTexture(GL_TEXTURE_2D, new_mesh.texture_);
+   // this functionality could be moved to a private func that takes an enum signifiying geometry
+   mesh.vertices_ = vertices; // copy construct
+   mesh.indices_ = indices;
+
+   const float* g_vertices = &(mesh.vertices_[0]);
+   
+   const unsigned int* g_indices = &(mesh.indices_[0]);
+
+   glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo_);
+   glBufferData(GL_ARRAY_BUFFER, 
+                mesh.vertices_.size() * sizeof(*g_vertices), 
+                g_vertices, 
+                GL_STATIC_DRAW);
+   
+   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0);
+   glEnableVertexAttribArray(0); // position attrib.
+   
+   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+   glEnableVertexAttribArray(1); // color attrib.
+   
+   glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
+   glEnableVertexAttribArray(2); // uv coord. attrib.
+
+   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.ebo_);
+   glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices_.size() * sizeof(*g_indices), g_indices, GL_STATIC_DRAW);
+
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+   glBindVertexArray(0);
+
+   printOpenGLError();
+
+   // return meshes_.size() - 1; // invariant: no deletion from meshes_
+}
+
+int OpenGLRenderer::loadTexture(const char* asset_fpath)
+{
+   GLuint texture;
+   glGenTextures(1, &texture);
+
+   glBindTexture(GL_TEXTURE_2D, texture);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -82,54 +117,25 @@ int OpenGLRenderer::createMesh(const char* asset_fpath, GLuint shader_index,
    }
    glBindTexture(GL_TEXTURE_2D, 0);
 
-   new_mesh.shader_id_ = shaders_.at(shader_index);
-   new_mesh.mvp_id_ = glGetUniformLocation(new_mesh.shader_id_, "MVP");
-   // new_mesh.texture_id_ = glGetUniformLocation(new_mesh.shader_id_, "ourTexture");
+   textures_.push_back(texture);
 
-   // this functionality could be moved to a private func that takes an enum signifiying geometry
-   new_mesh.vertices_ = vertices; // copy construct
-   new_mesh.indices_ = indices;
-
-   const float* g_vertices = &(new_mesh.vertices_[0]);
-   
-   const unsigned int* g_indices = &(new_mesh.indices_[0]);
-
-   glBindBuffer(GL_ARRAY_BUFFER, new_mesh.vbo_);
-   glBufferData(GL_ARRAY_BUFFER, 
-                new_mesh.vertices_.size() * sizeof(*g_vertices), 
-                g_vertices, 
-                GL_STATIC_DRAW);
-   
-   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0);
-   glEnableVertexAttribArray(0); // position attrib.
-   
-   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
-   glEnableVertexAttribArray(1); // color attrib.
-   
-   glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
-   glEnableVertexAttribArray(2); // uv coord. attrib.
-
-   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, new_mesh.ebo_);
-   glBufferData(GL_ELEMENT_ARRAY_BUFFER, new_mesh.indices_.size() * sizeof(*g_indices), g_indices, GL_STATIC_DRAW);
-
-   glBindBuffer(GL_ARRAY_BUFFER, 0);
-   glBindVertexArray(0);
-
-   printOpenGLError();
-
-   return meshes_.size() - 1; // invariant: no deletion from meshes_
+   return textures_.size() - 1;
 }
 
-void OpenGLRenderer::render(int mesh_index, glm::mat4 mvp)
+void OpenGLRenderer::render(OpenGLMesh& mesh, int texture_index, glm::mat4 mvp)
 {
-   OpenGLMesh& mesh = meshes_.at(mesh_index);
+   if (texture_index >= textures_.size())
+   {
+      printf("Attempting to render an unloaded texture @ %i!\n", texture_index);
+      return;
+   }
 
    if (mesh.vertices_.size() > 0 && mesh.indices_.size() > 0) 
    {
       glBindVertexArray(mesh.vao_);
 
       glActiveTexture(GL_TEXTURE0);
-      glBindTexture(GL_TEXTURE_2D, mesh.texture_);
+      glBindTexture(GL_TEXTURE_2D, textures_.at(texture_index));
       
       glUseProgram(mesh.shader_id_);
       glUniformMatrix4fv(mesh.mvp_id_, 1, GL_FALSE, &mvp[0][0]);
@@ -245,4 +251,61 @@ char* OpenGLRenderer::filetobuf(const char *file)
     buf[length] = 0; /* Null terminator */
 
     return buf; /* Return the buffer */
+}
+
+std::vector<float> OpenGLRenderer::getVerticesAABB(float x_halfwidth, float y_halfwidth)
+{
+   std::vector<float> vertices = {
+      // position                            // color           // uv coords
+      -(x_halfwidth),   y_halfwidth,  0.0f,  0.0f, 0.0f, 0.0f,  0.0f, 0.0f,  // top-left
+        x_halfwidth,    y_halfwidth,  0.0f,  0.0f, 0.0f, 0.0f,  1.0f, 0.0f,  // top-right
+        x_halfwidth,  -(y_halfwidth), 0.0f,  0.0f, 0.0f, 0.0f,  1.0f, 1.0f,  // bottom-right
+      -(x_halfwidth), -(y_halfwidth), 0.0f,  0.0f, 0.0f, 0.0f,  0.0f, 1.0f   // bottom-left
+   };
+
+   return vertices;
+}
+
+std::vector<float> OpenGLRenderer::getVerticesCircle(float r)
+{
+   std::vector<float> vertices = {
+      // position        // color           // uv coords
+      -(r),   r,  0.0f,  0.0f, 0.0f, 0.0f,  0.0f, 0.0f,  // top-left
+        r,    r,  0.0f,  0.0f, 0.0f, 0.0f,  1.0f, 0.0f,  // top-right
+        r,  -(r), 0.0f,  0.0f, 0.0f, 0.0f,  1.0f, 1.0f,  // bottom-right
+      -(r), -(r), 0.0f,  0.0f, 0.0f, 0.0f,  0.0f, 1.0f   // bottom-left
+   };
+
+   return vertices;
+}
+
+std::vector<float> OpenGLRenderer::getVerticesTri(float x_halfwidth, float y_halfwidth)
+{
+   std::vector<float> vertices = {
+      // position                              // color           // uv coords
+      0.0f,            2 * y_halfwidth, 0.0f,  0.0f, 0.0f, 0.0f,  0.0f, 0.0f,  // top-left
+      0.0f,            0.0f,            0.0f,  0.0f, 0.0f, 0.0f,  0.0f, 1.0f,  // bottom-left
+      2 * x_halfwidth, 0.0f,            0.0f,  0.0f, 0.0f, 0.0f,  1.0f, 1.0f   // bottom-right
+   };
+
+   return vertices;
+}
+
+std::vector<unsigned int> OpenGLRenderer::getIndicesAABB()
+{
+   std::vector<unsigned int> indices = {
+      0, 1, 2, // first triangle
+      2, 0, 3  // second triangle
+   };
+
+   return indices;
+}
+
+std::vector<unsigned int> OpenGLRenderer::getIndicesTri()
+{
+   std::vector<unsigned int> indices = {
+      0, 1, 2
+   };
+
+   return indices;
 }

@@ -17,6 +17,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 typedef struct OpenGLMesh Mesh_t;
+typedef struct OpenGLTexture Texture_t;
 typedef struct OpenGLRenderer Renderer_t;
 
 /* Well this is getting complicated...
@@ -55,7 +56,6 @@ struct OpenGLMesh
    GLuint vao_;
    GLuint vbo_;
    GLuint ebo_;
-   GLuint texture_; // in some ways, this is the true texture ID...
    std::vector<float> vertices_;
    std::vector<unsigned int> indices_;
    GLuint shader_id_;
@@ -71,16 +71,25 @@ struct OpenGLMesh
 class OpenGLRenderer
 {
 public:
-   init();
+   void init();
 
-   close();
+   void close();
 
-   int createMesh(const char* asset_fpath, 
+   void attachMesh(OpenGLMesh& mesh,
                   GLuint shader_index, 
                   std::vector<float> vertices, 
                   std::vector<unsigned int> indices);
 
-   void render(int mesh_index, glm::mat4 mvp);
+   int loadTexture(const char* asset_fpath);
+
+   void render(OpenGLMesh& mesh, int texture_index, glm::mat4 mvp);
+
+   std::vector<float> getVerticesAABB(float x_halfwidth, float y_halfwidth);
+   std::vector<float> getVerticesCircle(float r);
+   std::vector<float> getVerticesTri(float x_halfwidth, float y_halfwidth);
+
+   std::vector<unsigned int> getIndicesAABB();
+   std::vector<unsigned int> getIndicesTri();
 
 private: 
    GLuint loadShaders(const char* vert_fpath, const char* frag_fpath);
@@ -88,7 +97,7 @@ private:
    char* filetobuf(const char *file);
 
    std::vector<GLuint> shaders_;
-   std::vector<OpenGLMesh> meshes_;
+   std::vector<GLuint> textures_;
 };
 
 #endif

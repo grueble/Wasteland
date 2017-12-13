@@ -5,7 +5,7 @@
 
 // forward declarations
 class Entity;
-class Node;
+class BoundingNode;
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
@@ -27,7 +27,7 @@ public:
 
    PhysObj& getVolume();
 
-   virtual void update(Entity& obj, Node& world);
+   virtual void update(Entity& obj, std::vector<BoundingNode>& world);
 
 private:
    PhysObj* volume_;
@@ -36,12 +36,6 @@ private:
    PhysicsComponent( const PhysicsComponent & other ) = delete; // not copy constructable
    PhysicsComponent & operator=( const PhysicsComponent & other ) = delete; // not copy-assignable
 };
-
-// class WorldPhysicsComponent : public PhysicsComponent
-// {
-// public:
-//    WorldPhysicsComponent(PhysObj* volume);
-// };
 
 class ActorPhysicsComponent : public PhysicsComponent
 {
@@ -54,7 +48,7 @@ public:
    ActorPhysicsComponent( ActorPhysicsComponent && other );
    ActorPhysicsComponent & operator=( ActorPhysicsComponent && other );
 
-   void update(Entity& obj, Node& world) override;
+   void update(Entity& obj, std::vector<BoundingNode>& world) override;
 
 private:
    // copy constructor and copy-assignment operator

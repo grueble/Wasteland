@@ -8,29 +8,47 @@
 // - GraphicsComponent
 //
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+GraphicsComponent::GraphicsComponent(Renderer_t& renderer, int shader_index, int texture_index,
+                                     std::vector<float> vertices, std::vector<unsigned int> indices)
+{
+   renderer.attachMesh(mesh_, shader_index, vertices, indices);
+   texture_index_ = texture_index;
+}
+
+GraphicsComponent::~GraphicsComponent()
+{
+   glDeleteBuffers(1, &(mesh_.vbo_));
+   glDeleteBuffers(1, &(mesh_.ebo_));
+   glDeleteVertexArrays(1, &(mesh_.vao_));
+}
+
+GraphicsComponent::GraphicsComponent( GraphicsComponent && other )
+{
+   *this = std::move(other);
+}
+
+GraphicsComponent & GraphicsComponent::operator=( GraphicsComponent && other )
+{
+   if (this != &other)
+   {
+      // free any current resources
+      // glDeleteBuffers(1, &(mesh_it->vbo_)); // invariant: don't overwrite with move
+      // glDeleteBuffers(1, &(mesh_it->ebo_)); // might be safer to do this... but slower
+      // glDeleteVertexArrays(1, &(mesh_it->vao_));
+
+      // pilfer other's resources
+      mesh_ = other.mesh_;
+      texture_index_ = other.texture_index_;
+
+      // reset other
+      other.mesh_ = OpenGLMesh();
+   }
+
+   return *this;
+}
+
 void GraphicsComponent::update(Renderer_t& renderer, glm::mat4 mvp)
 {
-   this->draw(renderer, mvp);
-}
-
-WorldGraphicsComponent::WorldGraphicsComponent(int mesh_index) :
-   mesh_index_(mesh_index)
-{ }
-
-void WorldGraphicsComponent::draw(Renderer_t& renderer, glm::mat4 mvp)
-{
-   renderer.render(mesh_index_, mvp);
-}
-
-ActorGraphicsComponent::ActorGraphicsComponent(int mesh_index) :
-   mesh_index_(mesh_index)
-{ }
-
-void ActorGraphicsComponent::draw(Renderer_t& renderer, glm::mat4 mvp)
-{
-   // will want a flag here, and corresponding array of flags in Entity
-   // obj.world_xform_ = glm::translate(glm::mat4(1.0), )
-   // obj.world_xform_ = glm::translate(glm) * obj.world_xform_;
-
-   renderer.render(mesh_index_, mvp);
+   renderer.render(mesh_, texture_index_, mvp);
 }

@@ -4,7 +4,7 @@
 #include <vector>
 
 // gravitational acceleration
-static const float _G = -0.05f; //-9.8f; // m/s^2
+static const float _G = -0.04f; //-9.8f; // m/s^2 -0.05
 
 typedef struct vec2_s vec2_t;
 typedef struct vec3_s vec3_t;
@@ -17,6 +17,7 @@ struct PhysObj;
 struct AABB;
 struct Circle;
 struct Triangle;
+struct ConcaveCurve;
 
 struct vec2_s
 {
@@ -147,6 +148,7 @@ struct PhysObj
    virtual AABB_t* asAABB() { return nullptr; }
    virtual Circle* asCircle() { return nullptr; }
    virtual Triangle* asTriangle() { return nullptr; }
+   virtual ConcaveCurve* asConcaveCurve() { return nullptr; }
 
    const PhysObj_e getType() { return type; }
 
@@ -209,6 +211,11 @@ struct Triangle : public PhysObj // axis-aligned right triangle
 
    // x and y aligned legs
    vec2_t xw, yw, third_axis;
+};
+
+struct ConcaveCurve : public PhysObj
+{
+   ConcaveCurve* asConcaveCurve() override { return this; }
 };
 
 bool AABBvsAABB(Manifold* m);
