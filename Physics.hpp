@@ -130,7 +130,9 @@ bool collide(Manifold& m);
 bool AABBvsAABB(Manifold& m);
 bool AABBvsCircle(Manifold& m);
 bool AABBvsTriangle(Manifold& m);
-// bool CirclevsCircle(Manifold* m);
+bool CirclevsAABB(Manifold& m);
+bool CirclevsCircle(Manifold& m);
+// bool CirclevsTriangle(Manifold& m);
 
 bool collide_hyp(Triangle& tri, vec3_t& tri_p, vec3_t& other_p);
 
@@ -209,18 +211,21 @@ struct Triangle : public PhysObj // axis-aligned right triangle
       return scalar_proj(xw, axis) + scalar_proj(yw, axis);
    }
 
-   // x and y aligned legs
+   // x and y aligned legs (halfwidth vectors); normalized third axis
    vec2_t xw, yw, third_axis;
 };
 
 struct ConcaveCurve : public PhysObj
 {
-   ConcaveCurve* asConcaveCurve() override { return this; }
-};
+   // ConcaveCurve(float radius, )
+   // {
 
-bool AABBvsAABB(Manifold* m);
-bool AABBvsCircle(Manifold* m);
-bool AABBvsTriangle(Manifold* m);
-// bool CirclevsCircle(Manifold* m);
+   // }
+
+   ConcaveCurve* asConcaveCurve() override { return this; }
+
+   float r;
+   vec2_t dir; // signs of this vector indicate the quadrant
+};
 
 #endif

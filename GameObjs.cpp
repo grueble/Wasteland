@@ -98,6 +98,25 @@ std::vector<Manifold> Entity::resolveCollision(PhysObj& other_volume, vec3_t& ot
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
+// - Actor
+//
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Actor::Actor(vec3_t position,
+             std::unique_ptr<InputComponent> input,
+             std::unique_ptr<PhysicsComponent> physics, 
+             std::unique_ptr<GraphicsComponent> graphics) :
+   Entity(position, std::move(input), std::move(physics), std::move(graphics))
+{
+
+}
+
+Actor::jump()
+{
+
+}
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
 // - BoundingNode
 //
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -106,7 +125,7 @@ BoundingNode::BoundingNode(vec3_t position,
    Entity(position, 
           nullptr, 
           std::make_unique<PhysicsComponent>(
-            new AABB_t((vec2_t){ width, 0.0f }, (vec2_t){ 0.0f, height })), 
+             new AABB_t((vec2_t){ width, 0.0f }, (vec2_t){ 0.0f, height })), 
           nullptr)
 { }
 
@@ -169,6 +188,38 @@ std::vector<Manifold> BoundingNode::resolveCollision(PhysObj& other_volume, vec3
 void BoundingNode::addChild(std::unique_ptr<Entity> child)
 {
    children_.push_back(std::move(child));
+}
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// - Camera
+//
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Camera::Camera(vec3_t position) : // can we use a ref to plyr's position?
+   Entity(position, 
+          std::make_unique<CameraInputComponent>(),
+          std::make_unique<PhysicsComponent>(new Circle(15.0f)),
+          nullptr),
+   eye_((vec3_t){ p.x, p.y, p.z + 20.0f },
+        (vec3_t){ p.x, p.y, p.z },        
+        (vec3_t){ 0.0f, 1.0f, 0.0f })
+{ 
+   // eye_ = eye_point(
+   //    vec3_t(p.x, p.y, p.z + 20.0f), // camera position
+   //    vec3_t(p.x, p.y, p.z),         // look at point
+   //    vec3_t(0.0f, 1.0f, 0.0f)       // up dir
+   // );
+
+   updateView();
+}
+
+void Camera::updateView()
+{
+   view_ = glm::lookAt(
+      glm::vec3(eye_.camera.x, eye_.camera.y, eye_.camera.z),
+      glm::vec3(eye_.look_at.x, eye_.look_at.y, eye_.look_at.z),
+      glm::vec3(eye_.up_dir.x, eye_.up_dir.y, eye_.up_dir.z)
+   );
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

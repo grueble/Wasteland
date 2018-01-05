@@ -17,3 +17,8 @@ PlayerInputComponent::PlayerInputComponent()
 {
 
 }
+
+CameraInputComponent::CameraInputComponent()
+{
+   
+}

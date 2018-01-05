@@ -254,7 +254,7 @@ bool AABBvsTriangle(Manifold& m)
    float dist_x = m.a_p.x - m.b_p.x;
    float a_proj = scalar_proj(a->xw, X_AXIS); // + scalar_proj(a->yw, X_AXIS);
    float b_proj, overlap_x;
-   // determine the relative position of AABB to triangle on the x-axis
+   // determine the relative position of AABB to Triangle on the x-axis
    if ((b->xw.x > 0 && dist_x < 0) || // b faces (+) and a is (-) of b
        (b->xw.x < 0 && dist_x > 0))   // b faces (-) and a is (+) of b
    {
@@ -272,7 +272,7 @@ bool AABBvsTriangle(Manifold& m)
       float dist_y = m.a_p.y - m.b_p.y;
       a_proj = /* scalar_proj(a->xw, Y_AXIS) + */ scalar_proj(a->yw, Y_AXIS);
       float overlap_y;
-      // // determine the relative position of AABB to triangle on the y-axis
+      // determine the relative position of AABB to Triangle on the y-axis
       if ((b->yw.y > 0 && dist_y < 0) || // b faces (+) and a is (-) of b
           (b->yw.y < 0 && dist_y > 0))   // b faces (-) and a is (+) of b
       {
@@ -364,26 +364,260 @@ bool AABBvsTriangle(Manifold& m)
    return false;
 }
 
-// bool CirclevsCircle(Manifold* m)
-// {
-//    Circle* a = m->a->asCircle();
-//    Circle* b = m->b->asCircle();
+bool CirclevsAABB(Manifold& m)
+{
+   Manifold reverse(m.b, m.a, m.b_p, m.a_p);
 
-//    // test for projection overlap along the separating axis
-//    float dist_sq = pow(b->p.x + a->p.x, 2.0) + pow(b->p.y + a->p.y, 2.0);
-//    float overlap = (a->r + b->r) * (a->r + b->r) - dist_sq;
-//    if (overlap > 0)
-//    {
-//       vec2_t axis = vec2_t(a->p.x - b->p.x, a->p.y - b->p.y);
-//       normalize(axis);
-//       overlap = a->r + b->r - sqrt(dist_sq);
-//       m->proj = vec2_t(axis.x * overlap, axis.y * overlap);
+   bool result = AABBvsCircle(reverse);
 
-//       return true;
-//    }
+   if (result)
+   {
+      m.proj = vec2_t( -(reverse.proj.x), -(reverse.proj.y) );
+   }
 
-//    return false;
-// }
+   return result;
+
+   // Circle* a = m->a->asCircle();
+   // AABB_t* b = m->b->asAABB();
+
+   // // test for projection overlap along the x-axis
+   // float dist_x = m.a_p.x - m.b_p.x;
+   // float b_proj = scalar_proj(b->xw, X_AXIS); // + scalar_proj(b->yw, X_AXIS);
+   // float overlap_x = a->r + b_proj - std::abs(dist_x);
+
+   // if (overlap_x > 0)
+   // {
+   //    // test for projection overlap along the y-axis
+   //    float dist_y = m.a_p.y - m.b_p.y;
+   //    b_proj = /* scalar_proj(b->xw, Y_AXIS) + */ scalar_proj(b->yw, Y_AXIS); 
+   //    float overlap_y = a->r + b_proj - std::abs(dist_y);
+
+   //    if (overlap_y > 0)
+   //    {
+   //       // determine voronoi region 
+   //       if (std::abs(dist_x) > b->xw.x && std::abs(dist_y) > b->yw.y) // throw out "edge" regions
+   //       {
+   //          vec2_t nearest_vertex;
+   //          if (dist_x > 0 && dist_y > 0) { // top-right
+   //             nearest_vertex = vec2_t(m.b_p.x + b->xw.x, m.b_p.y + b->yw.y);
+   //          } 
+   //          else if (dist_x < 0 && dist_y > 0) { // top-left
+   //             nearest_vertex = vec2_t(m.b_p.x - b->xw.x, m.b_p.y + b->yw.y);
+   //          } 
+   //          else if (dist_x < 0 && dist_y < 0) { // bottom-left
+   //             nearest_vertex = vec2_t(m.b_p.x - b->xw.x, m.b_p.y - b->yw.y);
+   //          } 
+   //          else if (dist_x > 0 && dist_y < 0) { // bottom-right
+   //             nearest_vertex = vec2_t(m.b_p.x + b->xw.x, m.b_p.y - b->yw.y);
+   //          }
+
+   //          // test for projection overlap along the third separating axis
+   //          vec2_t third_axis = vec2_t(nearest_vertex.x - m.a_p.x, nearest_vertex.y - m.a_p.y);
+   //          normalize(third_axis);
+   //          float dist_third = // dot(3rd, b) - dot(3rd, a)
+   //             (third_axis.x * (m.b_p.x - m.a_p.x)) + (third_axis.y * (m.b_p.y - m.a_p.y));
+
+   //          // 3rd axis may contain negatives, so we need to use magnitude for the AABB
+   //          b_proj = std::abs(scalar_proj(b->xw, third_axis)) + 
+   //                   std::abs(scalar_proj(b->yw, third_axis));
+
+   //          float overlap_third = a->r + b_proj - std::abs(dist_third);
+
+   //          if (overlap_third > 0)
+   //          {
+   //             // project out of collision along the axis of least overlap
+   //             if (overlap_x < overlap_y) {
+   //                if (overlap_x < overlap_third) { // x-axis is min
+   //                   if (dist_x > 0) { 
+   //                      m.proj = vec2_t(overlap_x, 0);
+   //                   }
+   //                   else {
+   //                      m.proj = vec2_t(-overlap_x, 0);
+   //                   }
+   //                } 
+   //                else { // third axis is min
+   //                   m.proj = 
+   //                      vec2_t(third_axis.x * overlap_third, third_axis.y * overlap_third);
+   //                }
+   //             } 
+   //             else {
+   //                if (overlap_y < overlap_third) { // y-axis is min
+   //                   if (dist_y > 0) {
+   //                      m.proj = vec2_t(0, overlap_y);
+   //                   }
+   //                   else {
+   //                      m.proj = vec2_t(0, -overlap_y);
+   //                   }
+   //                } 
+   //                else { // third axis is min
+   //                   m.proj = 
+   //                      vec2_t(third_axis.x * overlap_third, third_axis.y * overlap_third);
+   //                }
+   //             }
+
+   //             return true;
+   //          }
+   //       }
+   //       else
+   //       {
+   //          if (overlap_x < overlap_y) { // x-axis is min
+   //             if (dist_x > 0) { 
+   //                m.proj = vec2_t(overlap_x, 0);
+   //             }
+   //             else {
+   //                m.proj = vec2_t(-overlap_x, 0);
+   //             }
+   //          }
+   //          else { // y-axis is min 
+   //             if (dist_y > 0) {
+   //                m.proj = vec2_t(0, overlap_y);
+   //             }
+   //             else {
+   //                m.proj = vec2_t(0, -overlap_y);
+   //             }
+   //          }
+
+   //          return true;
+   //       }
+   //    }
+   // }
+
+   // return false;
+}
+
+bool CirclevsCircle(Manifold& m)
+{
+   Circle* a = m.a->asCircle();
+   Circle* b = m.b->asCircle();
+
+   // test for projection overlap along the separating axis
+   float dist_sq = pow(m.b_p.x + m.a_p.x, 2.0) + pow(m.b_p.y + m.a_p.y, 2.0);
+   float overlap = (a->r + b->r) * (a->r + b->r) - dist_sq;
+   if (overlap > 0) // use epsilon here! we floating point
+   {
+      vec2_t axis = vec2_t(m.a_p.x - m.b_p.x, m.a_p.y - m.b_p.y);
+      normalize(axis);
+      overlap = a->r + b->r - sqrt(dist_sq);
+      m.proj = vec2_t(axis.x * overlap, axis.y * overlap);
+
+      return true;
+   }
+
+   return false;
+}
+
+bool CirclevsTriangle(Manifold& m)
+{
+   Circle* a = m.a->asCircle();
+   Triangle* b = m.b->asTriangle();
+
+   bool hypotenuse_case = collide_hyp(*b, m.b_p, m.a_p);
+
+   // test for projection overlap along the x-axis
+   float dist_x = m.a_p.x - m.b_p.x;
+   float b_proj, overlap_x;
+   // determine the relative position of Circle to Triangle on the x-axis
+   if ((b->xw.x > 0 && dist_x < 0) || // b faces (+) and a is (-) of b
+       (b->xw.x < 0 && dist_x > 0))   // b faces (-) and a is (+) of b
+   {
+      // hypotenuse opposite from Circle along x-axis
+      overlap_x = a->r - std::abs(dist_x);
+   }
+   else { // hypotenuse adjacent to Circle along y-axis
+      dist_x = m.a_p.x - (m.b_p.x + b->xw.x);
+      overlap_x = a->r + std::abs(b->xw.x) - std::abs(dist_x);
+   }
+   if (overlap_x > 0)
+   {
+      // test for projection overlap along the y-axis
+      float dist_y = m.a_p.y - m.b_p.y;
+      float overlap_y;
+      // determine the relative position of Circle to Triangle on the y-axis
+      if ((b->yw.y > 0 && dist_y < 0) || // b faces (+) and a is (-) of b
+          (b->yw.y < 0 && dist_y > 0))   // b faces (-) and a is (+) of b
+      {
+         // hypotenuse opposite from Circle along x-axis
+         overlap_y = a->r - std::abs(dist_y);
+      }
+      else { // hypotenuse adjacent to Circle along y-axis
+         dist_y = m.a_p.y - (m.b_p.y + b->yw.y);
+         overlap_y = a->r + std::abs(b->yw.y) - std::abs(dist_y);
+      }
+      if (overlap_y > 0)
+      {
+         if (!hypotenuse_case)
+         {
+            // project out of collision along the axis of least overlap
+            if (overlap_x < overlap_y) {
+               if (dist_x > 0) { 
+                  m.proj = vec2_t(overlap_x, 0); // x-axis is min
+               }
+               else {
+                  m.proj = vec2_t(-overlap_x, 0);
+               }
+            }
+            else {
+               if (dist_y > 0) {
+                  m.proj = vec2_t(0, overlap_y); // y-axis is min 
+               }
+               else {
+                  m.proj = vec2_t(0, -overlap_y);
+               }
+            }
+
+            return true;
+         }
+         else // special case for when hypotenuse lies between the two centers
+         {
+            // test for projection overlap along the 3rd separating axis
+            float dist_third = // dot(3rd, b) - dot(3rd, a)
+               (b->third_axis.x * (m.b_p.x - m.a_p.x)) + (b->third_axis.y * (m.b_p.y - m.a_p.y));
+
+            // both legs are used bc they are halfwidths
+            b_proj = scalar_proj(b->xw, b->third_axis) + scalar_proj(b->yw, b->third_axis);
+
+            float overlap_third = a->r + b_proj - std::abs(dist_third);
+
+            if (overlap_third > 0)
+            {
+               // project out of collision along the axis of least overlap
+               if (overlap_x < overlap_y) {
+                  if (overlap_x < overlap_third) {
+                     if (dist_x > 0) {
+                        m.proj = vec2_t(overlap_x, 0); // x- axis is min
+                     }
+                     else {
+                        m.proj = vec2_t(-overlap_x, 0);
+                     }
+                  } 
+                  else { // third axis is min
+                     m.proj = 
+                        vec2_t(b->third_axis.x * overlap_third, b->third_axis.y * overlap_third);
+                  }
+               }
+               else {
+                  if (overlap_y < overlap_third) {
+                     if (dist_y > 0) {
+                        m.proj = vec2_t(0, overlap_y); // y-axis is min   
+                     }
+                     else {
+                        m.proj = vec2_t(0, -overlap_y);
+                     }
+                  } 
+                  else { // third axis is min
+                     m.proj = 
+                        vec2_t(b->third_axis.x * overlap_third, b->third_axis.y * overlap_third);
+                  }
+               }
+
+               return true;
+            }
+         }
+      }
+   }
+
+   return false;
+}
 
 bool collide_hyp(Triangle& tri, vec3_t& tri_p, vec3_t& other_p)
 {

@@ -46,6 +46,8 @@ private:
    std::vector<BoundingNode> scene_;
 
    Entity player_;
+
+   Camera camera_;
 };
 
 #endif

@@ -26,19 +26,6 @@ SDL_GLContext glContext;
  * ---> ... how to format configuration information?
  */
 
-struct eye_point 
-{
-   eye_point(vec3_t a_cam, vec3_t a_look_at, vec3_t a_up_dir) :
-      camera(a_cam),
-      look_at(a_look_at),
-      up_dir(a_up_dir)
-   {}
-
-   vec3_t camera;
-   vec3_t look_at;
-   vec3_t up_dir;
-};
-
 bool init();
 void run(Renderer_t& renderer);
 void handleKeyDown(const SDL_Event& e, glm::mat4& view, eye_point& eye, Entity& plyr);
@@ -161,7 +148,7 @@ void run(Renderer_t& renderer)
    dsec accumulator(0.0); 
 
    eye_point eye = eye_point(
-      vec3_t(2.5f, 16.0f, 20.0f), // camera
+      vec3_t(5.0f, 18.0f, 20.0f), // camera
       vec3_t(5.0f, 18.0f, 0.0f),  // look at
       vec3_t(0.0f, 1.0f, 0.0f)   // up dir
    );
@@ -180,6 +167,8 @@ void run(Renderer_t& renderer)
 		{
 			switch (e.type)
 			{
+            // handleEvent(e);
+
 				case SDL_QUIT :
 				{
 					quit = true;
@@ -224,6 +213,7 @@ void run(Renderer_t& renderer)
          //    (*it)->update();
          // }
          player.update(world, renderer, view);
+         // camera.update
          accumulator -= dt;
          t += dt;
       }

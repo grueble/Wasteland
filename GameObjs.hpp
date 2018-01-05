@@ -19,6 +19,19 @@ typedef BoundingNode World_t;
 static glm::mat4 _projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f);
 // glm::mat4 projection = glm::ortho(-10.0f,10.0f,-10.0f,10.0f,0.0f,100.0f);
 
+struct eye_point 
+{
+   eye_point(vec3_t a_cam, vec3_t a_look_at, vec3_t a_up_dir) :
+      camera(a_cam),
+      look_at(a_look_at),
+      up_dir(a_up_dir)
+   {}
+
+   vec3_t camera;
+   vec3_t look_at;
+   vec3_t up_dir;
+};
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
 // - Entity
@@ -48,6 +61,7 @@ public:
    vec3_t p; // position
    vec2_t v; // velocity
    glm::mat4 world_xform_; // model matrix for vert shader
+   // I  think this should be moved to GraphicsComponent ^
 
 protected:
    std::unique_ptr<InputComponent> input_;
@@ -62,18 +76,26 @@ private:
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// - Camera 
+// - Actor
+// --> extensions: inherit this to build each vehicle class
 //
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class Camera : public Entity
+class Actor : public Entity
 {
-   Camera();
+public:
+   Actor(vec3_t position,
+         std::unique_ptr<InputComponent> input,
+         std::unique_ptr<PhysicsComponent> physics, 
+         std::unique_ptr<GraphicsComponent> graphics);
+
+   jump();
+
+   bool cmd_flags_[];
 };
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// - Node 
-// --> possible to extend this class with built in space partitioning
+// - Node
 //
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class Node
@@ -118,9 +140,28 @@ private:
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
+// - Camera 
+//
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+class Camera : public Entity
+{
+public:
+   Camera(vec3_t position);
+
+   glm::mat4& getView();
+
+   void updateView();
+
+private:
+   eye_point eye_;
+   glm::mat4 view_;
+};
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
 // - SceneNode
 // --> used for: Backgrounds, Animation
-// --> extensions: colliding SceneNodes
+// --> extensions(?): colliding SceneNodes
 //
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // class SceneNode : public Entity, Node

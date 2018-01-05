@@ -18,9 +18,9 @@ GraphicsComponent::GraphicsComponent(Renderer_t& renderer, int shader_index, int
 
 GraphicsComponent::~GraphicsComponent()
 {
-   glDeleteBuffers(1, &(mesh_.vbo_));
-   glDeleteBuffers(1, &(mesh_.ebo_));
-   glDeleteVertexArrays(1, &(mesh_.vao_));
+   glDeleteBuffers(1, &(mesh_.vbo));
+   glDeleteBuffers(1, &(mesh_.ebo));
+   glDeleteVertexArrays(1, &(mesh_.vao));
 }
 
 GraphicsComponent::GraphicsComponent( GraphicsComponent && other )
@@ -42,7 +42,7 @@ GraphicsComponent & GraphicsComponent::operator=( GraphicsComponent && other )
       texture_index_ = other.texture_index_;
 
       // reset other
-      other.mesh_ = OpenGLMesh();
+      other.mesh_ = Mesh_t();
    }
 
    return *this;

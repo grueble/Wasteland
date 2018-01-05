@@ -1,5 +1,7 @@
 #include "OpenGLGraphics.hpp"
 
+using namespace glGraphics_;
+
 // debug
 #define printOpenGLError() printOglError(__FILE__, __LINE__)
 
@@ -23,7 +25,7 @@ int printOglError(char *file, int line)
 // - OpenGLRenderer
 //
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void OpenGLRenderer::init()
+void glGraphics_::OpenGLRenderer::init()
 {
    shaders_.push_back(loadShaders("shaders/texture.vert", "shaders/texture.frag"));
    // textures_.push_back(glGetUniformLocation(shaders_.at(0), "ourTexture")); // possible vector of texture IDs
@@ -48,27 +50,27 @@ void OpenGLRenderer::close()
 void OpenGLRenderer::attachMesh(OpenGLMesh& mesh, GLuint shader_index, 
                                 std::vector<float> vertices, std::vector<unsigned int> indices)
 {
-   glGenVertexArrays(1, &mesh.vao_);
-   glBindVertexArray(mesh.vao_);
+   glGenVertexArrays(1, &mesh.vao);
+   glBindVertexArray(mesh.vao);
 
-   glGenBuffers(1, &mesh.vbo_);
-   glGenBuffers(1, &mesh.ebo_);
+   glGenBuffers(1, &mesh.vbo);
+   glGenBuffers(1, &mesh.ebo);
 
-   mesh.shader_id_ = shaders_.at(shader_index);
-   mesh.mvp_id_ = glGetUniformLocation(mesh.shader_id_, "MVP");
+   mesh.shader_id = shaders_.at(shader_index);
+   mesh.mvp_id = glGetUniformLocation(mesh.shader_id, "MVP");
    // mesh.texture_id_ = glGetUniformLocation(mesh.shader_id_, "ourTexture");
 
    // this functionality could be moved to a private func that takes an enum signifiying geometry
-   mesh.vertices_ = vertices; // copy construct
-   mesh.indices_ = indices;
+   mesh.vertices = vertices; // copy construct
+   mesh.indices = indices;
 
-   const float* g_vertices = &(mesh.vertices_[0]);
+   const float* g_vertices = &(mesh.vertices[0]);
    
-   const unsigned int* g_indices = &(mesh.indices_[0]);
+   const unsigned int* g_indices = &(mesh.indices[0]);
 
-   glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo_);
+   glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
    glBufferData(GL_ARRAY_BUFFER, 
-                mesh.vertices_.size() * sizeof(*g_vertices), 
+                mesh.vertices.size() * sizeof(*g_vertices), 
                 g_vertices, 
                 GL_STATIC_DRAW);
    
@@ -81,8 +83,8 @@ void OpenGLRenderer::attachMesh(OpenGLMesh& mesh, GLuint shader_index,
    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
    glEnableVertexAttribArray(2); // uv coord. attrib.
 
-   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.ebo_);
-   glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices_.size() * sizeof(*g_indices), g_indices, GL_STATIC_DRAW);
+   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.ebo);
+   glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(*g_indices), g_indices, GL_STATIC_DRAW);
 
    glBindBuffer(GL_ARRAY_BUFFER, 0);
    glBindVertexArray(0);
@@ -130,18 +132,18 @@ void OpenGLRenderer::render(OpenGLMesh& mesh, int texture_index, glm::mat4 mvp)
       return;
    }
 
-   if (mesh.vertices_.size() > 0 && mesh.indices_.size() > 0) 
+   if (mesh.vertices.size() > 0 && mesh.indices.size() > 0) 
    {
-      glBindVertexArray(mesh.vao_);
+      glBindVertexArray(mesh.vao);
 
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_2D, textures_.at(texture_index));
       
-      glUseProgram(mesh.shader_id_);
-      glUniformMatrix4fv(mesh.mvp_id_, 1, GL_FALSE, &mvp[0][0]);
+      glUseProgram(mesh.shader_id);
+      glUniformMatrix4fv(mesh.mvp_id, 1, GL_FALSE, &mvp[0][0]);
       // glUniform1i(mesh.texture_id_, 0);
 
-      glDrawElements(GL_TRIANGLES, mesh.indices_.size(), GL_UNSIGNED_INT, 0);
+      glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
       
       glUseProgram(0);
 

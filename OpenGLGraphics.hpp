@@ -16,10 +16,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-typedef struct OpenGLMesh Mesh_t;
-typedef struct OpenGLTexture Texture_t;
-typedef struct OpenGLRenderer Renderer_t;
-
 /* Well this is getting complicated...
  *
  * -> OpenGLRenderer now owns & manages all of the rendering
@@ -46,58 +42,66 @@ typedef struct OpenGLRenderer Renderer_t;
  *    (which really only affects setting of vertices/indices)
  */
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// - OpenGLMesh
-//
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-struct OpenGLMesh
+namespace glGraphics_
 {
-   GLuint vao_;
-   GLuint vbo_;
-   GLuint ebo_;
-   std::vector<float> vertices_;
-   std::vector<unsigned int> indices_;
-   GLuint shader_id_;
-   GLuint mvp_id_;
-   // GLuint texture_id_; // possible to use multiple textures...
+   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   //
+   // - OpenGLMesh
+   //
+   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   struct OpenGLMesh
+   {
+      GLuint vao;
+      GLuint vbo;
+      GLuint ebo;
+      std::vector<float> vertices;
+      std::vector<unsigned int> indices;
+      GLuint shader_id;
+      GLuint mvp_id;
+      // GLuint texture_id; // possible to use multiple textures...
+   };
+   
+   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   //
+   // - OpenGLRenderer
+   //
+   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   class OpenGLRenderer
+   {
+   public:
+      void init();
+   
+      void close();
+   
+      void attachMesh(OpenGLMesh& mesh,
+                     GLuint shader_index, 
+                     std::vector<float> vertices, 
+                     std::vector<unsigned int> indices);
+   
+      int loadTexture(const char* asset_fpath);
+   
+      void render(OpenGLMesh& mesh, int texture_index, glm::mat4 mvp);
+   
+      std::vector<float> getVerticesAABB(float x_halfwidth, float y_halfwidth);
+      std::vector<float> getVerticesCircle(float r);
+      std::vector<float> getVerticesTri(float x_halfwidth, float y_halfwidth);
+   
+      std::vector<unsigned int> getIndicesAABB();
+      std::vector<unsigned int> getIndicesTri();
+   
+   private: 
+      GLuint loadShaders(const char* vert_fpath, const char* frag_fpath);
+   
+      char* filetobuf(const char *file);
+   
+      std::vector<GLuint> shaders_;
+      std::vector<GLuint> textures_;
+   };
 };
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// - OpenGLRenderer
-//
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class OpenGLRenderer
-{
-public:
-   void init();
-
-   void close();
-
-   void attachMesh(OpenGLMesh& mesh,
-                  GLuint shader_index, 
-                  std::vector<float> vertices, 
-                  std::vector<unsigned int> indices);
-
-   int loadTexture(const char* asset_fpath);
-
-   void render(OpenGLMesh& mesh, int texture_index, glm::mat4 mvp);
-
-   std::vector<float> getVerticesAABB(float x_halfwidth, float y_halfwidth);
-   std::vector<float> getVerticesCircle(float r);
-   std::vector<float> getVerticesTri(float x_halfwidth, float y_halfwidth);
-
-   std::vector<unsigned int> getIndicesAABB();
-   std::vector<unsigned int> getIndicesTri();
-
-private: 
-   GLuint loadShaders(const char* vert_fpath, const char* frag_fpath);
-
-   char* filetobuf(const char *file);
-
-   std::vector<GLuint> shaders_;
-   std::vector<GLuint> textures_;
-};
+// this should be typedef's in a controller class or include header
+typedef struct glGraphics_::OpenGLRenderer Renderer_t;
+typedef struct glGraphics_::OpenGLMesh Mesh_t;
+// typedef struct glGraphics_::OpenGLTexture Texture_t;
 
 #endif

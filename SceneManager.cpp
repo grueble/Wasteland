@@ -10,7 +10,8 @@
 SceneManager::SceneManager(Renderer_t& renderer, SDL_Window* window, SDL_GLContext& gl_context) :
    renderer_(renderer),
    window_(window),
-   gl_context_(gl_context)
+   gl_context_(gl_context),
+   camera_((vec3_t){ 2.0f, 34.0f, 0.0f })
 { 
    player_ = Entity(
       (vec3_t){ 2.0f, 34.0f, 0.0f },
@@ -30,6 +31,7 @@ std::vector<BoundingNode>& SceneManager::getWorld()
    return scene_;
 }
 
+// change this to Actor&
 Entity& SceneManager::getPlayer()
 {
    return player_;
@@ -39,6 +41,7 @@ void SceneManager::loadScene()
 {
    // NOTE: OpenGL prefers main thread, cannot call OpenGL functions from two threads at once
    // std::thread t(SceneManager::loadDemoObjects, this);
+   // both attachMesh (called during GraphicsComponent initialization and render use glGraphics_ 
 
    loadDemoTextures();
    loadDemoObjects();
@@ -202,7 +205,7 @@ void SceneManager::loadDemoObjects()
 
    // Panel 5
    BoundingNode panel_5 =
-      BoundingNode((vec3_t){ 60.0f, 15.0f, 0.0f }, 15.0f, 15.0f);
+      BoundingNode((vec3_t){ 85.0f, 15.0f, 0.0f }, 15.0f, 15.0f);
 
    createPlatformAABB((vec3_t){ 75.0f, 1.25f, 0.0f },
                       (vec2_t){ 5.0f, 0.0f },
