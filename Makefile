@@ -24,7 +24,7 @@ LDFLAGS=$(LIB_PATH) -Wl,-subsystem,windows -lSDL2main -lSDL2 -lSDL2_image -lglu3
 TARGET=main.exe
 BUILD_DIR=build
 OBJS=$(BUILD_DIR)/Physics.o $(BUILD_DIR)/OpenGLGraphics.o \
-	  $(BUILD_DIR)/GameObjs.o \
+	  $(BUILD_DIR)/GameObjs.o $(BUILD_DIR)/Command.o \
 	  $(BUILD_DIR)/InputComponent.o $(BUILD_DIR)/PhysicsComponent.o $(BUILD_DIR)/GraphicsComponent.o \
 	  $(BUILD_DIR)/SceneManager.o \
      $(BUILD_DIR)/Wasteland.o

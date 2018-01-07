@@ -9,6 +9,7 @@
 #include "OpenGLGraphics.hpp"
 
 // forward declarations
+class Command;
 class InputComponent;
 class PhysicsComponent;
 class GraphicsComponent;
@@ -43,9 +44,9 @@ public:
    Entity();
 
    Entity(vec3_t position,
-          std::unique_ptr<InputComponent> input,
-          std::unique_ptr<PhysicsComponent> physics, 
-          std::unique_ptr<GraphicsComponent> graphics);
+          // InputComponent* input,
+          PhysicsComponent* physics, 
+          GraphicsComponent* graphics);
 
    ~Entity();
 
@@ -53,7 +54,7 @@ public:
    Entity( Entity && other );
    Entity & operator=( Entity && other );
 
-   virtual void update(std::vector<BoundingNode>& world, Renderer_t& renderer, glm::mat4 view);
+   virtual void update(std::vector<BoundingNode>& world, Renderer_t& renderer, glm::mat4& view);
 
    // virtual void resolveCollision(Manifold& m);//PhysObj& other_volume, vec3_t& other_pos);
    virtual std::vector<Manifold> resolveCollision(PhysObj& other_volume, vec3_t& other_pos);
@@ -64,9 +65,9 @@ public:
    // I  think this should be moved to GraphicsComponent ^
 
 protected:
-   std::unique_ptr<InputComponent> input_;
-   std::unique_ptr<PhysicsComponent> physics_;
-   std::unique_ptr<GraphicsComponent> graphics_;
+   // InputComponent *input_;
+   PhysicsComponent *physics_;
+   GraphicsComponent *graphics_;
 
 private:
    // copy constructor and copy-assignment operator
@@ -78,19 +79,31 @@ private:
 //
 // - Actor
 // --> extensions: inherit this to build each vehicle class
+// --> refactors: actor as an interface, specific vehicles inherit & implement
 //
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class Actor : public Entity
 {
 public:
    Actor(vec3_t position,
-         std::unique_ptr<InputComponent> input,
-         std::unique_ptr<PhysicsComponent> physics, 
-         std::unique_ptr<GraphicsComponent> graphics);
+         InputComponent* input,
+         PhysicsComponent* physics, 
+         GraphicsComponent* graphics);
 
-   jump();
+   void update(std::vector<BoundingNode>& world, Renderer_t& renderer, glm::mat4& view) override;
 
-   bool cmd_flags_[];
+   void pushAction(const SDL_Event& e);
+   
+   void accelerate(float acceleration);
+
+   void jump(float jump_velocity);
+
+protected:
+   InputComponent *input_;
+
+private:
+   const float X_VEL_MAX = 0.20f;
+   const float Y_VEL_MAX = 0.75f;
 };
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -102,7 +115,7 @@ class Node
 {
 public:
    virtual ~Node() { }
-   virtual void addChild(std::unique_ptr<Entity> child) = 0;
+   virtual void addChild(Entity* child) = 0;
 };
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -117,21 +130,20 @@ class BoundingNode : public Entity, Node
 public:
    BoundingNode(vec3_t position, 
                 float width, float height);
-                // std::unique_ptr<PhysicsComponent> physics);
 
    // move constructor and move-assignment operator
    BoundingNode( BoundingNode && other );
    BoundingNode & operator=( BoundingNode && other );
 
-   void update(std::vector<BoundingNode>& world, Renderer_t& renderer, glm::mat4 view) override;
+   void update(std::vector<BoundingNode>& world, Renderer_t& renderer, glm::mat4& view) override;
 
    std::vector<Manifold> resolveCollision(PhysObj& other_volume, vec3_t& other_pos) override;
 
-   void addChild(std::unique_ptr<Entity> child) override;
+   void addChild(Entity* child) override;
 
 private:
    // children need to be Entities, then we can get bound nodes (need separate resolveCollision algs)
-   std::vector<std::unique_ptr<Entity> > children_;
+   std::vector<Entity*> children_;
 
    // copy constructor and copy-assignment operator
    BoundingNode( const BoundingNode & ) = delete; // not copy constructable
@@ -143,18 +155,22 @@ private:
 // - Camera 
 //
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class Camera : public Entity
+class Camera : public Entity // public Actor?
 {
 public:
-   Camera(vec3_t position);
+   Camera(vec3_t position, Actor& player);
 
-   glm::mat4& getView();
+   // glm::mat4& getView();
 
-   void updateView();
+   // void updateView();
+
+   void update(std::vector<BoundingNode>& world, Renderer_t& renderer, glm::mat4& view) override;
 
 private:
    eye_point eye_;
-   glm::mat4 view_;
+   // glm::mat4 view_;
+
+   Actor& player_; // reference to the player
 };
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -176,7 +192,7 @@ private:
 //    SceneNode( SceneNode && other );
 //    SceneNode & operator=( SceneNode && other );
 
-//    void update(std::vector<BoundingNode>& world, Renderer_t& renderer, glm::mat4 view) override;
+//    void update(std::vector<BoundingNode>& world, Renderer_t& renderer, glm::mat4& view) override;
 
 //    void addChild(std::unique_ptr<Entity> child) override;
 

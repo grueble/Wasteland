@@ -12,25 +12,23 @@
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Entity::Entity() :
    world_xform_(glm::mat4(1.0)),
-   input_(nullptr),
+   // input_(nullptr),
    physics_(nullptr),
    graphics_(nullptr)
 { }
 
 Entity::~Entity()
-{
-
-}
+{ }
 
 Entity::Entity(vec3_t position,
-               std::unique_ptr<InputComponent> input,
-               std::unique_ptr<PhysicsComponent> physics, 
-               std::unique_ptr<GraphicsComponent> graphics) :
+               // InputComponent* input,
+               PhysicsComponent* physics, 
+               GraphicsComponent* graphics) :
    p(position),
    world_xform_(glm::translate(glm::mat4(), glm::vec3(p.x, p.y, p.z))),
-   input_(std::move(input)),
-   physics_(std::move(physics)),
-   graphics_(std::move(graphics))
+   // input_(input),
+   physics_(physics),
+   graphics_(graphics)
 { }
 
 Entity::Entity( Entity&& other )
@@ -47,12 +45,12 @@ Entity& Entity::operator=( Entity&& other )
       p = other.p;
       v = other.v;
       world_xform_ = other.world_xform_;
-      input_ = std::move(other.input_); 
-      physics_ = std::move(other.physics_);
-      graphics_ = std::move(other.graphics_);
+      // input_ = other.input_; 
+      physics_ = other.physics_;
+      graphics_ = other.graphics_;
 
       // reset other
-      other.input_ = nullptr;
+      // other.input_ = nullptr;
       other.physics_ = nullptr;
       other.graphics_ = nullptr;
    }
@@ -60,11 +58,12 @@ Entity& Entity::operator=( Entity&& other )
    return *this;
 }
 
-void Entity::update(std::vector<BoundingNode>& world, Renderer_t& renderer, glm::mat4 view)
+void Entity::update(std::vector<BoundingNode>& world, Renderer_t& renderer, glm::mat4& view)
 {
-   if (input_) {
-      input_->update(*this);
-   }
+   // k, so this should probably not even update input, allow me to access actor directly.
+   // if (input_) {
+   //    input_->update(*this);
+   // }
 
    if (physics_) {
       physics_->update(*this, world);
@@ -102,17 +101,41 @@ std::vector<Manifold> Entity::resolveCollision(PhysObj& other_volume, vec3_t& ot
 //
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Actor::Actor(vec3_t position,
-             std::unique_ptr<InputComponent> input,
-             std::unique_ptr<PhysicsComponent> physics, 
-             std::unique_ptr<GraphicsComponent> graphics) :
-   Entity(position, std::move(input), std::move(physics), std::move(graphics))
-{
+             InputComponent* input,
+             PhysicsComponent* physics, 
+             GraphicsComponent* graphics) :
+   Entity(position, physics, graphics),
+   input_(input)
+{ }
 
+void Actor::update(std::vector<BoundingNode>& world, Renderer_t& renderer, glm::mat4& view)
+{
+   if (input_) {
+      input_->update(*this);
+   }
+
+   Entity::update(world, renderer, view);
 }
 
-Actor::jump()
+void Actor::pushAction(const SDL_Event& e)
 {
+   input_->pushCommand(e);
+}
 
+void Actor::accelerate(float acceleration)
+{
+   if (std::abs(v.x) < X_VEL_MAX)
+   {
+      v.x += acceleration;
+   }
+}
+
+void Actor::jump(float jump_velocity)
+{
+   if (v.y < Y_VEL_MAX)
+   {
+      v.y += jump_velocity; 
+   }
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -123,9 +146,9 @@ Actor::jump()
 BoundingNode::BoundingNode(vec3_t position, 
                            float width, float height) :
    Entity(position, 
-          nullptr, 
-          std::make_unique<PhysicsComponent>(
-             new AABB_t((vec2_t){ width, 0.0f }, (vec2_t){ 0.0f, height })), 
+          // nullptr, 
+          new PhysicsComponent(
+            new AABB_t((vec2_t){ width, 0.0f }, (vec2_t){ 0.0f, height })), 
           nullptr)
 { }
 
@@ -141,17 +164,17 @@ BoundingNode & BoundingNode::operator=( BoundingNode && other )
       Entity::operator=( std::move(other) );
 
       // pilfer other's resources
-      children_ = std::move(other.children_);
+      children_ = other.children_;
    }
    
    return *this;
 }
 
-void BoundingNode::update(std::vector<BoundingNode>& world, Renderer_t& renderer, glm::mat4 view)
+void BoundingNode::update(std::vector<BoundingNode>& world, Renderer_t& renderer, glm::mat4& view)
 {
    Entity::update(world, renderer, view);
 
-   std::vector<std::unique_ptr<Entity> >::iterator it;
+   std::vector<Entity*>::iterator it;
    for (it = children_.begin(); it != children_.end(); ++it)
    {
       (*it)->update(world, renderer, view);
@@ -170,7 +193,7 @@ std::vector<Manifold> BoundingNode::resolveCollision(PhysObj& other_volume, vec3
    if (collide(m)) 
    {
       // on a collision with the BB, detect and store collisions for all children 
-      std::vector<std::unique_ptr<Entity> >::iterator it;
+      std::vector<Entity*>::iterator it;
       for (it = children_.begin(); it != children_.end(); ++it)
       {
          std::vector<Manifold> child_collisions = (*it)->resolveCollision(other_volume, other_pos);
@@ -185,9 +208,9 @@ std::vector<Manifold> BoundingNode::resolveCollision(PhysObj& other_volume, vec3
    return collisions;
 }
 
-void BoundingNode::addChild(std::unique_ptr<Entity> child)
+void BoundingNode::addChild(Entity* child)
 {
-   children_.push_back(std::move(child));
+   children_.push_back(child);
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -195,14 +218,15 @@ void BoundingNode::addChild(std::unique_ptr<Entity> child)
 // - Camera
 //
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Camera::Camera(vec3_t position) : // can we use a ref to plyr's position?
+Camera::Camera(vec3_t position, Actor& player) : // can we use a ref to plyr's position?
    Entity(position, 
-          std::make_unique<CameraInputComponent>(),
-          std::make_unique<PhysicsComponent>(new Circle(15.0f)),
+          // new CameraInputComponent(),
+          new PhysicsComponent(new Circle(15.0f)),
           nullptr),
    eye_((vec3_t){ p.x, p.y, p.z + 20.0f },
         (vec3_t){ p.x, p.y, p.z },        
-        (vec3_t){ 0.0f, 1.0f, 0.0f })
+        (vec3_t){ 0.0f, 1.0f, 0.0f }),
+   player_(player)
 { 
    // eye_ = eye_point(
    //    vec3_t(p.x, p.y, p.z + 20.0f), // camera position
@@ -210,12 +234,26 @@ Camera::Camera(vec3_t position) : // can we use a ref to plyr's position?
    //    vec3_t(0.0f, 1.0f, 0.0f)       // up dir
    // );
 
-   updateView();
+   // updateView();
 }
 
-void Camera::updateView()
+// void Camera::updateView()
+// {
+//    view_ = glm::lookAt(
+//       glm::vec3(eye_.camera.x, eye_.camera.y, eye_.camera.z),
+//       glm::vec3(eye_.look_at.x, eye_.look_at.y, eye_.look_at.z),
+//       glm::vec3(eye_.up_dir.x, eye_.up_dir.y, eye_.up_dir.z)
+//    );
+// }
+
+void Camera::update(std::vector<BoundingNode>& world, Renderer_t& renderer, glm::mat4& view)
 {
-   view_ = glm::lookAt(
+   eye_.camera.x = player_.p.x; 
+   eye_.camera.y = player_.p.y; 
+   eye_.look_at.x = player_.p.x;
+   eye_.look_at.y = player_.p.y;
+
+   view = glm::lookAt(
       glm::vec3(eye_.camera.x, eye_.camera.y, eye_.camera.z),
       glm::vec3(eye_.look_at.x, eye_.look_at.y, eye_.look_at.z),
       glm::vec3(eye_.up_dir.x, eye_.up_dir.y, eye_.up_dir.z)
@@ -238,7 +276,7 @@ void Camera::updateView()
 
 // }
 
-// void SceneNode::update(std::vector<Entity>& world, Renderer_t& renderer, glm::mat4 view)
+// void SceneNode::update(std::vector<Entity>& world, Renderer_t& renderer, glm::mat4& view)
 // {
 //    if (parent_) {
 //       this->world_xform_ = parent_->world_xform_ * local_xform_;

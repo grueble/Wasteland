@@ -1,6 +1,5 @@
 #include <chrono>
 
-#include "OpenGLGraphics.hpp"
 #include "SceneManager.hpp"
 
 #define PROGRAM_NAME "Wasteland"
@@ -139,7 +138,8 @@ void run(Renderer_t& renderer)
    scene_mngr.loadScene();
 
    std::vector<BoundingNode>& world = scene_mngr.getWorld();
-   Entity& player = scene_mngr.getPlayer();
+   Actor& player = scene_mngr.getPlayer();
+   Camera& camera = scene_mngr.getCamera();
 
    dsec t(0.0);
    dsec dt(1.0/60.0);
@@ -147,56 +147,29 @@ void run(Renderer_t& renderer)
    auto current_time = std::chrono::high_resolution_clock::now();
    dsec accumulator(0.0); 
 
-   eye_point eye = eye_point(
-      vec3_t(5.0f, 18.0f, 20.0f), // camera
-      vec3_t(5.0f, 18.0f, 0.0f),  // look at
-      vec3_t(0.0f, 1.0f, 0.0f)   // up dir
-   );
-
-   glm::mat4 view = glm::lookAt(
-      glm::vec3(eye.camera.x, eye.camera.y, eye.camera.z),
-      glm::vec3(eye.look_at.x, eye.look_at.y, eye.look_at.z),
-      glm::vec3(eye.up_dir.x, eye.up_dir.y, eye.up_dir.z)
-   );
+   glm::mat4 view = glm::mat4(1.0f);
 
    // main loop
    while (!quit)
    {
+      std::cout << "top" << std::endl;
+
       // input handling
    	while (SDL_PollEvent(&e))
 		{
-			switch (e.type)
-			{
-            // handleEvent(e);
-
-				case SDL_QUIT :
-				{
-					quit = true;
-               break;
-				}
-            case SDL_MOUSEBUTTONDOWN:
-            {
-               if (e.button.button == SDL_BUTTON_LEFT) {
-                  // handleLmbDown(e);
-               }
-               else if (e.button.button == SDL_BUTTON_RIGHT) {
-                  // handleRmbDown(e);
-               }
-               break;
-            }
-            // during these routines, add events to an event queue for the player. feed to InputComponent
-            case SDL_KEYDOWN :
-            {
-               handleKeyDown(e, view, eye, player);
-               break;
-            }
-            case SDL_KEYUP :
-            {
-               handleKeyUp(e, player);
-               break;
-            }
+         if (e.type == SDL_QUIT)
+         {
+            quit = true;
+         }
+         else
+         {
+            scene_mngr.handleInput(e);
+            // handleInput(e, player);
          }
 		}
+
+      // SDL_KEYDOWN fires 
+      // SDL_GetKeyState : https://gamedev.stackexchange.com/questions/19571/how-can-i-process-continuously-held-keys-with-sdl
 
       auto new_time = std::chrono::high_resolution_clock::now();
       dsec frame_time = new_time - current_time;
@@ -212,8 +185,8 @@ void run(Renderer_t& renderer)
          //    (*it)->integrate(t, dt);
          //    (*it)->update();
          // }
-         player.update(world, renderer, view);
-         // camera.update
+         camera.update(world, renderer, view); // these lines basically say: keep updating the player
+         player.update(world, renderer, view); // and view, while we wait for the bottom of the frame
          accumulator -= dt;
          t += dt;
       }

@@ -7,23 +7,46 @@
 
 #include <iostream>
 
-SceneManager::SceneManager(Renderer_t& renderer, SDL_Window* window, SDL_GLContext& gl_context) :
+SceneManager::SceneManager(Renderer_t& renderer, 
+                           SDL_Window* window, 
+                           SDL_GLContext& gl_context) :
    renderer_(renderer),
    window_(window),
    gl_context_(gl_context),
-   camera_((vec3_t){ 2.0f, 34.0f, 0.0f })
+   player_(START_POSITION, 
+           new PlayerInputComponent(), 
+           new ActorPhysicsComponent(
+              new AABB_t((vec2_t){ 0.5f, 0.0f }, (vec2_t){ 0.0f, 0.5f })),
+           new GraphicsComponent(renderer_,
+                                 0, /*shader index*/
+                                 renderer_.loadTexture("./assets/player.png"), // 0
+                                 renderer_.getVerticesAABB(0.5f, 0.5f), 
+                                 renderer_.getIndicesAABB())), 
+   camera_(START_POSITION, player_)
 { 
-   player_ = Entity(
-      (vec3_t){ 2.0f, 34.0f, 0.0f },
-      std::make_unique<PlayerInputComponent>(),
-      std::make_unique<ActorPhysicsComponent>(
-         new AABB_t((vec2_t){ 0.5f, 0.0f }, (vec2_t){ 0.0f, 0.5f })),
-      std::make_unique<GraphicsComponent>(
-         renderer_, 
-         0, /*shader_index*/
-         renderer_.loadTexture("./assets/player.png"), // 0
-         renderer_.getVerticesAABB(0.5f, 0.5f), 
-         renderer_.getIndicesAABB()));
+   // cool thing I could do here, create player_ w/ no InputComponent, etc. 
+   // -> add/remove components to fit the scene
+}
+
+SceneManager::~SceneManager()
+{
+   std::vector<InputComponent*>::iterator input_it;
+   for (input_it = i_components_.begin(); input_it != i_components_.end(); ++input_it)
+   {
+      delete *input_it;
+   }
+
+   std::vector<PhysicsComponent*>::iterator physics_it;
+   for (physics_it = p_components_.begin(); physics_it != p_components_.end(); ++physics_it)
+   {
+      delete *physics_it;
+   }
+
+   std::vector<GraphicsComponent*>::iterator graphics_it;
+   for (graphics_it = g_components_.begin(); graphics_it != g_components_.end(); ++graphics_it)
+   {
+      delete *graphics_it;
+   }
 }
 
 std::vector<BoundingNode>& SceneManager::getWorld()
@@ -32,9 +55,14 @@ std::vector<BoundingNode>& SceneManager::getWorld()
 }
 
 // change this to Actor&
-Entity& SceneManager::getPlayer()
+Actor& SceneManager::getPlayer()
 {
    return player_;
+}
+
+Camera& SceneManager::getCamera()
+{
+   return camera_;
 }
 
 void SceneManager::loadScene()
@@ -52,41 +80,52 @@ void SceneManager::loadScene()
    // }
 }
 
+void SceneManager::handleInput(const SDL_Event& e)
+{
+   player_.pushAction(e);
+}
+
 void SceneManager::createPlatformAABB(vec3_t position, 
                                       vec2_t xw, vec2_t yw, 
                                       int texture_index,
                                       BoundingNode* parent)
 {
+   // no InputComponent
+
+   PhysicsComponent* physics = new PhysicsComponent(new AABB_t(xw, yw));
+   p_components_.push_back(physics);
+
+   GraphicsComponent* graphics = 
+      new GraphicsComponent(renderer_, 
+                            0, /*shader_index*/
+                            texture_index, 
+                            renderer_.getVerticesAABB(xw.x, yw.y), 
+                            renderer_.getIndicesAABB());
+   g_components_.push_back(graphics);
+
    parent->addChild(
-      std::make_unique<Entity>(
-         position,
-         nullptr, // no InputComponent
-         std::make_unique<PhysicsComponent>(new AABB_t(xw, yw)),
-         std::make_unique<GraphicsComponent>(
-            renderer_, 
-            0, /*shader_index*/
-            texture_index, 
-            renderer_.getVerticesAABB(xw.x, yw.y), 
-            renderer_.getIndicesAABB())));//,
-         // glm::translate(glm::mat4(), glm::vec3(position.x, position.y, position.z)));
+      new Entity(position, /*nullptr,*/ physics, graphics));
 }
 
 void SceneManager::createPlatformCircle(vec3_t position, float r,  
                                         int texture_index,
                                         BoundingNode* parent)
 {
-    parent->addChild(
-      std::make_unique<Entity>(
-         position,
-         nullptr, // no InputComponent
-         std::make_unique<PhysicsComponent>(new Circle(r)),
-         std::make_unique<GraphicsComponent>(
-            renderer_, 
-            0, /*shader_index*/
-            texture_index, 
-            renderer_.getVerticesCircle(r), 
-            renderer_.getIndicesAABB())));//,
-         // glm::translate(glm::mat4(), glm::vec3(position.x, position.y, position.z)));
+   // no InputComponent
+
+   PhysicsComponent* physics = new PhysicsComponent(new Circle(r));
+   p_components_.push_back(physics);
+
+   GraphicsComponent* graphics = 
+      new GraphicsComponent(renderer_, 
+                            0, /*shader_index*/
+                            texture_index, 
+                            renderer_.getVerticesCircle(r), 
+                            renderer_.getIndicesAABB());
+   g_components_.push_back(graphics);
+
+   parent->addChild(
+      new Entity(position, /*nullptr,*/ physics, graphics));
 }
 
 void SceneManager::createPlatformTri(vec3_t position,
@@ -94,18 +133,21 @@ void SceneManager::createPlatformTri(vec3_t position,
                                      int texture_index,
                                      BoundingNode* parent)
 {
+   // no InputComponent
+
+   PhysicsComponent* physics = new PhysicsComponent(new Triangle(xw, yw));
+   p_components_.push_back(physics);
+
+   GraphicsComponent* graphics = 
+      new GraphicsComponent(renderer_, 
+                            0, /*shader_index*/
+                            texture_index, 
+                            renderer_.getVerticesTri(xw.x, yw.y), 
+                            renderer_.getIndicesTri());
+   g_components_.push_back(graphics);
+
    parent->addChild(
-      std::make_unique<Entity>(
-         position,
-         nullptr, // no InputComponent
-         std::make_unique<PhysicsComponent>(new Triangle(xw, yw)),
-         std::make_unique<GraphicsComponent>(
-            renderer_, 
-            0, /*shader_index*/
-            texture_index, 
-            renderer_.getVerticesTri(xw.x, yw.y), 
-            renderer_.getIndicesTri())));//,
-         // glm::translate(glm::mat4(), glm::vec3(position.x, position.y, position.z)));
+      new Entity(position, /*nullptr,*/ physics, graphics));
 }
 
 // loadStartingTextures and backgroundTextureLoad
@@ -145,6 +187,8 @@ void SceneManager::loadDemoObjects()
                      (vec2_t){ 0.0f, -5.0f },
                      3, &(panel_1));
 
+   scene_.push_back(std::move(panel_1));
+
    // Panel 2
    BoundingNode panel_2 = 
       BoundingNode((vec3_t){ 27.5f, 15.0f, 0.0f }, 7.5f, 15.0f);
@@ -167,6 +211,8 @@ void SceneManager::loadDemoObjects()
                      (vec2_t){ 0.0f, 2.5f },
                      3, &(panel_2));
 
+   scene_.push_back(std::move(panel_2));
+
    // Panel 3
    BoundingNode panel_3 =
       BoundingNode((vec3_t){ 42.5f, 10.0f, 0.0f }, 7.5f, 10.0f);
@@ -186,6 +232,8 @@ void SceneManager::loadDemoObjects()
                      (vec2_t){ 0.0f, 2.0f },
                      3, &(panel_3));
 
+   scene_.push_back(std::move(panel_3));
+
    // Panel 4
    BoundingNode panel_4 =
       BoundingNode((vec3_t){ 60.0f, 15.0f, 0.0f }, 10.0f, 15.0f);
@@ -202,6 +250,8 @@ void SceneManager::loadDemoObjects()
                       (vec2_t){ 2.5f, 0.0f },
                       (vec2_t){ 0.0f, 1.0f },
                       1, &(panel_4));
+
+   scene_.push_back(std::move(panel_4));
 
    // Panel 5
    BoundingNode panel_5 =
@@ -230,6 +280,8 @@ void SceneManager::loadDemoObjects()
                       (vec2_t){ 0.0f, 5.0f },
                       1, &(panel_5));
 
+   scene_.push_back(std::move(panel_5));
+
    // Panel 6
    BoundingNode panel_6 =
       BoundingNode((vec3_t){ 100.0f, 40.0f, 0.0f }, 10.0f, 10.0f);
@@ -252,10 +304,5 @@ void SceneManager::loadDemoObjects()
    createPlatformCircle((vec3_t){ 105.0f, 45.0f, 0.0f },
                         2.5f, 6, &(panel_6));
 
-   scene_.push_back(std::move(panel_1));
-   scene_.push_back(std::move(panel_2));
-   scene_.push_back(std::move(panel_3));
-   scene_.push_back(std::move(panel_4));
-   scene_.push_back(std::move(panel_5));
    scene_.push_back(std::move(panel_6));
 }
